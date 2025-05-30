@@ -1,0 +1,11 @@
+Moved obsolete .js test files here for reference. These are replaced by .ts test files.
+app.coverage.test.js
+app.exit.coverage.test.js
+app.test.js
+e2e.test.js
+index.test.js
+routes.coverage.test.js
+services.coverage.test.js
+graphql/graphql.error.test.js
+graphql/graphql.test.js
+middleware/error.test.js
