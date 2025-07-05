@@ -5,7 +5,7 @@ import {
   mapJoiErrorMessage,
   bulkInsertSchema,
   bulkUpdateSchema,
-} from '../validation/disaster';
+} from '../validation/disaster.js';
 import {
   createDisaster,
   getAllDisasters,
@@ -16,11 +16,15 @@ import {
   findDisastersNear,
   bulkInsertDisasters,
   bulkUpdateDisasters,
-} from '../services/disaster.service';
+} from '../services/disaster.service.js';
 import { IResolvers } from '@graphql-tools/utils';
-import { DisasterInput, DisasterResponse, DisasterResponseDTO } from '../dto/disaster.dto';
-import { DisasterDocument } from '../disaster.model';
+import { DisasterInput, DisasterResponse, DisasterResponseDTO } from '../dto/disaster.dto.js';
+import { Disaster } from '../disaster.model.js';
 import Joi from 'joi';
+
+function isValidNumericId(id: string): boolean {
+  return /^\d+$/.test(id) && parseInt(id, 10) > 0;
+}
 
 function isApolloNotFoundError(err: unknown): boolean {
   return (
@@ -46,16 +50,13 @@ const resolvers: IResolvers = {
     ) => {
       try {
         const { page = 1, limit = 20, type, dateFrom, dateTo, status } = args;
-        // Use string type for date filter to match model
-        const filter: { type?: string; date?: { $gte?: string; $lte?: string }; status?: string } =
-          {};
+        // Create filter object for PostgreSQL service - simplified for now
+        const filter: Record<string, unknown> = {};
         if (type) filter.type = type;
         if (status) filter.status = status;
-        if (dateFrom || dateTo) {
-          filter.date = {};
-          if (dateFrom) filter.date.$gte = dateFrom;
-          if (dateTo) filter.date.$lte = dateTo;
-        }
+        if (dateFrom) filter.dateFrom = dateFrom;
+        if (dateTo) filter.dateTo = dateTo;
+
         const skip = (page - 1) * limit;
         const data: DisasterResponse[] = (
           await getAllDisasters({
@@ -63,8 +64,8 @@ const resolvers: IResolvers = {
             limit,
             filter,
           })
-        ).map((doc: DisasterDocument) => new DisasterResponseDTO(doc));
-        const total = await countDisasters(filter);
+        ).map((doc: Disaster) => new DisasterResponseDTO(doc));
+        const total = await countDisasters();
         return {
           data,
           page,
@@ -76,10 +77,11 @@ const resolvers: IResolvers = {
         throw new ApolloError('Failed to fetch disasters', 'INTERNAL_ERROR');
       }
     },
-    disaster: async (_: unknown, { _id }: { _id: string }) => {
+    disaster: async (_: unknown, { id }: { id: string }) => {
       try {
-        if (!_id) throw new UserInputError('Missing _id');
-        const result: DisasterDocument | null = await getDisasterById(_id);
+        if (!id) throw new UserInputError('Missing id');
+        if (!isValidNumericId(id)) throw new UserInputError('Invalid id format');
+        const result: Disaster | null = await getDisasterById(parseInt(id, 10));
         if (!result) throw new ApolloError('Not found', 'NOT_FOUND');
         return new DisasterResponseDTO(result);
       } catch (err) {
@@ -95,7 +97,7 @@ const resolvers: IResolvers = {
         const { error } = nearQuerySchema.validate({ lat, lng, distance });
         if (error) throw new UserInputError(mapJoiErrorMessage(error.message));
         return (await findDisastersNear({ lat, lng, distance })).map(
-          (doc: DisasterDocument) => new DisasterResponseDTO(doc),
+          (doc: Disaster) => new DisasterResponseDTO(doc),
         );
       } catch (err) {
         if (err instanceof UserInputError) throw err;
@@ -117,15 +119,16 @@ const resolvers: IResolvers = {
     },
     updateDisaster: async (
       _: unknown,
-      { _id, input }: { _id: string; input: Partial<DisasterInput> },
+      { id, input }: { id: string; input: Partial<DisasterInput> },
     ) => {
       try {
-        if (!_id) throw new UserInputError('Missing _id');
+        if (!id) throw new UserInputError('Missing id');
+        if (!isValidNumericId(id)) throw new UserInputError('Invalid id format');
         const { error } = disasterSchema
           .fork(['type', 'location', 'date'], (field: Joi.Schema) => field.optional())
           .validate(input);
         if (error) throw new UserInputError(mapJoiErrorMessage(error.message));
-        const updated = await updateDisaster(_id, input);
+        const updated = await updateDisaster(parseInt(id, 10), input);
         if (!updated) throw new ApolloError('Not found', 'NOT_FOUND');
         return new DisasterResponseDTO(updated);
       } catch (err) {
@@ -133,10 +136,11 @@ const resolvers: IResolvers = {
         throw new ApolloError('Failed to update disaster', 'INTERNAL_ERROR');
       }
     },
-    deleteDisaster: async (_: unknown, { _id }: { _id: string }) => {
+    deleteDisaster: async (_: unknown, { id }: { id: string }) => {
       try {
-        if (!_id) throw new UserInputError('Missing _id');
-        const result = await deleteDisaster(_id);
+        if (!id) throw new UserInputError('Missing id');
+        if (!isValidNumericId(id)) throw new UserInputError('Invalid id format');
+        const result = await deleteDisaster(parseInt(id, 10));
         if (!result) throw new ApolloError('Not found', 'NOT_FOUND');
         return !!result;
       } catch (err) {
@@ -149,7 +153,7 @@ const resolvers: IResolvers = {
         const { error } = bulkInsertSchema.validate({ disasters });
         if (error) throw new UserInputError(mapJoiErrorMessage(error.message));
         const inserted = await bulkInsertDisasters(disasters);
-        return inserted.map((doc: DisasterDocument) => new DisasterResponseDTO(doc));
+        return inserted.map((doc: Disaster) => new DisasterResponseDTO(doc));
       } catch (err) {
         if (err instanceof UserInputError) throw err;
         throw new ApolloError('Failed to bulk insert disasters', 'INTERNAL_ERROR');
@@ -157,13 +161,29 @@ const resolvers: IResolvers = {
     },
     bulkUpdateDisasters: async (
       _: unknown,
-      { updates }: { updates: Array<{ _id: string; input: Partial<DisasterInput> }> },
+      { updates }: { updates: Array<{ id: string; input: Partial<DisasterInput> }> },
     ) => {
       try {
-        const { error } = bulkUpdateSchema.validate({ updates });
+        if (!Array.isArray(updates)) {
+          throw new UserInputError(mapJoiErrorMessage('Invalid input: updates must be an array'));
+        }
+        // Transform the GraphQL input structure to match the validation schema
+        const validationArray = updates.map(({ id, input }) => ({
+          id: parseInt(id, 10),
+          ...input,
+        }));
+        const { error } = bulkUpdateSchema.validate(validationArray);
         if (error) throw new UserInputError(mapJoiErrorMessage(error.message));
-        // Map to the expected update format
-        const updateOps = updates.map(({ _id, input }) => ({ _id, ...input }));
+
+        // Map to the expected service format with proper typing
+        const updateOps = validationArray.map((item) => ({
+          id: item.id,
+          type: item.type,
+          location: item.location,
+          date: item.date,
+          description: item.description,
+          status: item.status as 'active' | 'contained' | 'resolved' | undefined,
+        }));
         await bulkUpdateDisasters(updateOps);
         return true;
       } catch (err) {

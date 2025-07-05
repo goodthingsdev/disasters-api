@@ -29,7 +29,7 @@ const bulkInsertSchema = Joi.array().items(disasterSchema).min(1).required();
 const bulkUpdateSchema = Joi.array()
   .items(
     Joi.object({
-      _id: Joi.string().required(),
+      id: Joi.number().integer().positive().required(),
       type: Joi.string(),
       location: Joi.object({
         type: Joi.string().valid('Point'),
@@ -40,7 +40,7 @@ const bulkUpdateSchema = Joi.array()
       date: Joi.string().isoDate(),
       description: Joi.string().allow(''),
       status: Joi.string().valid('active', 'contained', 'resolved'),
-    }).min(2), // must have _id and at least one field to update
+    }).min(2), // must have id and at least one field to update
   )
   .min(1)
   .required();

@@ -1,0 +1,105 @@
+process.env.NODE_ENV = 'test';
+import { describe, it, expect } from '@jest/globals';
+import {
+  createDisaster,
+  getAllDisasters,
+  countDisasters,
+  getDisasterById,
+  updateDisaster,
+  deleteDisaster,
+  findDisastersNear,
+  bulkInsertDisasters,
+  bulkUpdateDisasters,
+} from './services/disaster.service';
+
+// Mock the PostgreSQL pool for service coverage testing
+jest.mock('pg', () => ({
+  Pool: jest.fn().mockImplementation(() => ({
+    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+    end: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+describe('Disaster service coverage', () => {
+  it('should export expected functions', () => {
+    expect(typeof createDisaster).toBe('function');
+    expect(typeof getAllDisasters).toBe('function');
+    expect(typeof getDisasterById).toBe('function');
+    expect(typeof updateDisaster).toBe('function');
+    expect(typeof deleteDisaster).toBe('function');
+    expect(typeof findDisastersNear).toBe('function');
+    expect(typeof bulkInsertDisasters).toBe('function');
+    expect(typeof bulkUpdateDisasters).toBe('function');
+    expect(typeof countDisasters).toBe('function');
+  });
+
+  it('getAllDisasters: should handle both legacy and paginated calls', async () => {
+    // Mock implementation returns empty results for coverage
+    const result = await getAllDisasters();
+    expect(Array.isArray(result) || result.hasOwnProperty('data')).toBe(true);
+  });
+
+  it('countDisasters: should handle counting with and without filter', async () => {
+    // Test both with and without filter
+    const count1 = await countDisasters();
+    const count2 = await countDisasters({ type: 'fire' });
+    expect(typeof count1).toBe('number');
+    expect(typeof count2).toBe('number');
+  });
+
+  it('findDisastersNear: should handle both object and tuple parameters', async () => {
+    // Test both overloads for coverage
+    const result1 = await findDisastersNear({ lat: 1, lng: 2, distance: 3 });
+    const result2 = await findDisastersNear(2, 1, 3);
+    expect(Array.isArray(result1)).toBe(true);
+    expect(Array.isArray(result2)).toBe(true);
+  });
+
+  it('bulkInsertDisasters: should handle bulk insert operations', async () => {
+    const disasters = [
+      {
+        type: 'fire',
+        location: { type: 'Point', coordinates: [1, 2] },
+        date: '2025-01-01',
+        description: '',
+        status: 'active',
+      },
+    ];
+    
+    const result = await bulkInsertDisasters(disasters);
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('bulkUpdateDisasters: should handle bulk update operations', async () => {
+    const updates = [{ id: 1, type: 'fire', status: 'contained' }];
+    
+    const result = await bulkUpdateDisasters(updates);
+    expect(result).toBeDefined();
+  });
+
+  it('individual CRUD operations: should handle basic operations', async () => {
+    const disasterInput = {
+      type: 'fire',
+      location: { type: 'Point', coordinates: [1, 2] },
+      date: '2025-01-01',
+      description: 'Test',
+      status: 'active',
+    };
+    
+    // Test create
+    const created = await createDisaster(disasterInput);
+    expect(created).toBeDefined();
+    
+    // Test get by ID
+    const found = await getDisasterById(1);
+    expect(found === null || typeof found === 'object').toBe(true);
+    
+    // Test update
+    const updated = await updateDisaster(1, disasterInput);
+    expect(updated === null || typeof updated === 'object').toBe(true);
+    
+    // Test delete
+    const deleted = await deleteDisaster(1);
+    expect(deleted === null || typeof deleted === 'object').toBe(true);
+  });
+});

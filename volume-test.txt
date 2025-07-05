@@ -1,0 +1,2 @@
+This is a test file to verify volume mounting works correctly.
+Created at: 2025-06-01

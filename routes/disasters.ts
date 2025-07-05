@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction, Router } from 'express';
 import Joi from 'joi';
-import mongoose from 'mongoose';
 import {
   createDisaster,
   getAllDisasters,
@@ -10,18 +9,18 @@ import {
   findDisastersNear,
   bulkInsertDisasters,
   bulkUpdateDisasters,
-} from '../services/disaster.service';
-import { DisasterInputDTO, DisasterResponseDTO } from '../dto/disaster.dto';
+} from '../services/disaster.service.js';
+import { DisasterInputDTO, DisasterResponseDTO } from '../dto/disaster.dto.js';
 import {
   disasterSchema,
   nearQuerySchema,
   bulkInsertSchema,
   bulkUpdateSchema,
   mapJoiErrorMessage,
-} from '../validation/disaster';
-import { errorResponse } from '../middleware/error';
+} from '../validation/disaster.js';
+import { errorResponse } from '../middleware/error.js';
 import type { DisasterInput } from '../dto/disaster.dto';
-import type { DisasterDocument } from '../disaster.model';
+import type { Disaster } from '../disaster.model';
 
 function asyncHandler<T extends Request, U extends Response>(
   fn: (req: T, res: U, next: NextFunction) => Promise<unknown>,
@@ -31,8 +30,8 @@ function asyncHandler<T extends Request, U extends Response>(
   };
 }
 
-function isValidObjectId(id: string): boolean {
-  return mongoose.Types.ObjectId.isValid(id);
+function isValidNumericId(id: string): boolean {
+  return /^\d+$/.test(id) && parseInt(id, 10) > 0;
 }
 
 const router = Router();
@@ -54,17 +53,14 @@ router.get(
     const filter: Record<string, unknown> = {};
     if (type) filter.type = type;
     if (status) filter.status = status;
-    if (dateFrom || dateTo) {
-      filter.date = {};
-      if (dateFrom) (filter.date as Record<string, string>).$gte = dateFrom;
-      if (dateTo) (filter.date as Record<string, string>).$lte = dateTo;
-    }
+    if (dateFrom) filter.dateFrom = dateFrom;
+    if (dateTo) filter.dateTo = dateTo;
     const disasters = await getAllDisasters({
       skip: (pageNum - 1) * limitNum,
       limit: limitNum,
       filter,
     });
-    res.json({ data: disasters.map((d: DisasterDocument) => new DisasterResponseDTO(d)) });
+    res.json({ data: disasters.map((d: Disaster) => new DisasterResponseDTO(d)) });
   }),
 );
 
@@ -85,7 +81,7 @@ router.get(
     }
     const { lat, lng, distance } = value;
     const disasters = await findDisastersNear({ lng, lat, distance });
-    res.json(disasters.map((d: DisasterDocument) => new DisasterResponseDTO(d)));
+    res.json(disasters.map((d: Disaster) => new DisasterResponseDTO(d)));
   }),
 );
 
@@ -105,11 +101,9 @@ router.post(
       const disasters = await bulkInsertDisasters(
         req.body.map((d: DisasterInput) => new DisasterInputDTO(d)),
       );
-      res
-        .status(201)
-        .json({ data: disasters.map((d: DisasterDocument) => new DisasterResponseDTO(d)) });
+      res.status(201).json({ data: disasters.map((d: Disaster) => new DisasterResponseDTO(d)) });
     } catch (err) {
-      // Handle duplicate key or validation errors from Mongo
+      // Handle duplicate key or validation errors from PostgreSQL
       return errorResponse(res, {
         error: 'Bulk insert failed',
         details: [(err as Error).message],
@@ -140,10 +134,13 @@ router.put(
         code: 'INVALID_INPUT',
         status: 400,
       });
-    // Only check ObjectIds if Joi validation passes
+    // Only check IDs if Joi validation passes
     const invalidIds = req.body
-      .filter((item) => !item._id || typeof item._id !== 'string' || !isValidObjectId(item._id))
-      .map((item) => item._id);
+      .filter(
+        (item) =>
+          !item.id || typeof item.id !== 'number' || !Number.isInteger(item.id) || item.id <= 0,
+      )
+      .map((item) => item.id);
     if (invalidIds.length > 0) {
       // For bulk, always return 'Invalid input' (never 'Invalid ID format')
       return errorResponse(res, {
@@ -171,13 +168,13 @@ router.put(
 router.get(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    if (!isValidObjectId(req.params.id))
+    if (!isValidNumericId(req.params.id))
       return errorResponse(res, {
         error: 'Invalid ID format',
         code: 'INVALID_ID',
         status: 400,
       });
-    const disaster = await getDisasterById(req.params.id);
+    const disaster = await getDisasterById(parseInt(req.params.id, 10));
     if (!disaster)
       return errorResponse(res, {
         error: 'Not found',
@@ -209,7 +206,7 @@ router.post(
 router.put(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    if (!isValidObjectId(req.params.id))
+    if (!isValidNumericId(req.params.id))
       return errorResponse(res, {
         error: 'Invalid ID format',
         code: 'INVALID_ID',
@@ -223,7 +220,10 @@ router.put(
         code: 'INVALID_INPUT',
         status: 400,
       });
-    const disaster = await updateDisaster(req.params.id, new DisasterInputDTO(req.body));
+    const disaster = await updateDisaster(
+      parseInt(req.params.id, 10),
+      new DisasterInputDTO(req.body),
+    );
     if (!disaster)
       return errorResponse(res, {
         error: 'Not found',
@@ -238,13 +238,13 @@ router.put(
 router.delete(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    if (!isValidObjectId(req.params.id))
+    if (!isValidNumericId(req.params.id))
       return errorResponse(res, {
         error: 'Invalid ID format',
         code: 'INVALID_ID',
         status: 400,
       });
-    const disaster = await deleteDisaster(req.params.id);
+    const disaster = await deleteDisaster(parseInt(req.params.id, 10));
     if (!disaster)
       return errorResponse(res, {
         error: 'Not found',

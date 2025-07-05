@@ -1,19 +1,25 @@
 process.env.NODE_ENV = 'test';
 
 import request from 'supertest';
-import { createApp } from './app';
-import mongoose from 'mongoose';
+import { createApp } from './app.js';
+import { Pool } from 'pg';
 import type { Server } from 'http';
 
 let server: Server;
+let pool: Pool;
 
 beforeAll(async () => {
   const app = await createApp();
   server = app.listen(0);
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGO_URI!);
-  }
+
+  pool = new Pool({
+    connectionString: process.env.POSTGRES_URI!,
+  });
+
+  // Test database connection
+  await pool.query('SELECT 1');
 });
+
 afterAll(async () => {
   if (server) {
     await new Promise<void>((resolve, reject) => {
@@ -23,7 +29,15 @@ afterAll(async () => {
       });
     });
   }
-  await mongoose.disconnect();
+  if (pool) {
+    await pool.end();
+  }
+});
+
+beforeEach(async () => {
+  if (pool) {
+    await pool.query('DELETE FROM disasters');
+  }
 });
 
 describe('App', () => {
@@ -40,15 +54,16 @@ describe('App', () => {
   });
 
   it('should return 200 for /readyz (mocked DB)', async () => {
-    // Mock mongoose connection
-    const fakeConn = Object.create(mongoose.connection);
-    fakeConn.readyState = 1;
-    fakeConn.db = { admin: () => ({ ping: () => Promise.resolve() }) };
-    const spy = jest.spyOn(mongoose, 'connection', 'get').mockReturnValue(fakeConn);
+    // Mock database connection check - we'll mock the pool query
+    const originalQuery = pool.query;
+    pool.query = jest.fn().mockResolvedValue({ rows: [] });
+
     const res = await request(server).get('/readyz');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ready');
-    spy.mockRestore();
+
+    // Restore original query method
+    pool.query = originalQuery;
   });
 
   // For all errorHandler tests, use Error or APIError objects with required properties (name, message, etc.)

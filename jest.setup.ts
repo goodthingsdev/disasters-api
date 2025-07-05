@@ -14,8 +14,9 @@ EventEmitter.defaultMaxListeners = 20;
 // TypeScript: process.exit is (code?: number) => never, so we must cast
 (process.exit as unknown) = jest.fn();
 
-// Set a unique test DB per Jest worker for parallel safety (works with real MongoDB container)
+// Set a unique test DB per Jest worker for parallel safety (works with real PostgreSQL container)
 const workerId = process.env.JEST_WORKER_ID || '0';
-const baseUri = process.env.MONGO_URI_BASE || 'mongodb://disasters:disasters_pass@mongo:27017';
+const baseUri =
+  process.env.POSTGRES_URI_BASE || 'postgresql://disasters:disasters_pass@postgres:5432';
 const dbName = `disasters_test_jest_worker${workerId}`;
-process.env.MONGO_URI = `${baseUri}/${dbName}?authSource=admin`;
+process.env.POSTGRES_URI = `${baseUri}/${dbName}`;

@@ -1,22 +1,24 @@
 version: '3.8'
 services:
-  mongo:
-    image: mongo:7
+  postgres:
+    image: postgis/postgis:15-3.4
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: disasters
-      MONGO_INITDB_ROOT_PASSWORD: disasters_pass
-      MONGO_INITDB_DATABASE: disasters_test
+      POSTGRES_DB: disasters_test
+      POSTGRES_USER: disasters
+      POSTGRES_PASSWORD: disasters_pass
+      POSTGRES_HOST_AUTH_METHOD: password
     ports:
-      - '27017:27017'
+      - '5432:5432'
     volumes:
-      - mongo_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-postgis.sql:/docker-entrypoint-initdb.d/init-postgis.sql:ro
   api:
     build: .
     depends_on:
-      - mongo
+      - postgres
     environment:
-      - MONGO_URI=mongodb://disasters:disasters_pass@mongo:27017/disasters_test?authSource=admin
+      - POSTGRES_URI=postgresql://disasters:disasters_pass@postgres:5432/disasters_test
       - NODE_ENV=test
     ports:
       - '3000:3000'
@@ -30,4 +32,4 @@ services:
       retries: 5
       start_period: 10s
 volumes:
-  mongo_data:
+  postgres_data:

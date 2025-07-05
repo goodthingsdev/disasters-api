@@ -30,7 +30,7 @@ export class DisasterInputDTO implements DisasterInput {
 
 // For response shaping
 export interface DisasterResponse {
-  _id: string;
+  id: number;
   type: string;
   location: { type: 'Point'; coordinates: [number, number] };
   date: string | Date;
@@ -41,7 +41,7 @@ export interface DisasterResponse {
 }
 
 export class DisasterResponseDTO implements DisasterResponse {
-  _id: string;
+  id: number;
   type: string;
   location: { type: 'Point'; coordinates: [number, number] };
   date: string | Date;
@@ -50,9 +50,9 @@ export class DisasterResponseDTO implements DisasterResponse {
   updatedAt?: string | Date;
   status: string;
 
-  constructor(disaster: DisasterResponse | import('../disaster.model').DisasterDocument) {
-    // Always coerce _id to string (handles Mongoose Document and plain object)
-    this._id = disaster._id ? disaster._id.toString() : '';
+  constructor(disaster: DisasterResponse | import('../disaster.model').Disaster) {
+    // Use numeric id from PostgreSQL
+    this.id = disaster.id as number;
     this.type = disaster.type;
     this.location = disaster.location;
     this.date = disaster.date;

@@ -18,10 +18,10 @@ describe('GraphQL resolvers coverage', () => {
     ).rejects.toThrow(ApolloError);
   });
 
-  it('disaster: should throw UserInputError for missing _id', async () => {
+  it('disaster: should throw UserInputError for missing id', async () => {
     await expect(
-      // @ts-expect-error: purposely passing undefined _id to test error handling
-      resolvers.Query.disaster({}, { _id: undefined }, {}),
+      // @ts-expect-error: purposely passing undefined id to test error handling
+      resolvers.Query.disaster({}, { id: undefined }, {}),
     ).rejects.toThrow(UserInputError);
   });
 
@@ -31,7 +31,7 @@ describe('GraphQL resolvers coverage', () => {
     });
     await expect(
       // @ts-expect-error: purposely passing wrong args to test error handling
-      resolvers.Query.disaster({}, { _id: 'id' }, {}),
+      resolvers.Query.disaster({}, { id: 1 }, {}),
     ).rejects.toThrow(ApolloError);
   });
 
@@ -93,10 +93,10 @@ describe('GraphQL resolvers coverage', () => {
     ).rejects.toThrow(ApolloError);
   });
 
-  it('updateDisaster: should throw UserInputError for missing _id', async () => {
+  it('updateDisaster: should throw UserInputError for missing id', async () => {
     await expect(
-      // @ts-expect-error: purposely passing undefined _id to test error handling
-      resolvers.Mutation.updateDisaster({}, { _id: undefined, input: {} }, {}),
+      // @ts-expect-error: purposely passing undefined id to test error handling
+      resolvers.Mutation.updateDisaster({}, { id: undefined, input: {} }, {}),
     ).rejects.toThrow(UserInputError);
   });
 
@@ -106,7 +106,7 @@ describe('GraphQL resolvers coverage', () => {
     });
     await expect(
       // @ts-expect-error: purposely passing valid args to simulate service failure
-      resolvers.Mutation.updateDisaster({}, { _id: 'id', input: {} }, {}),
+      resolvers.Mutation.updateDisaster({}, { id: 1, input: {} }, {}),
     ).rejects.toThrow(ApolloError);
   });
 
@@ -116,14 +116,14 @@ describe('GraphQL resolvers coverage', () => {
     const validInput = { status: 'active' };
     await expect(
       // @ts-expect-error: purposely passing valid args to simulate not found
-      resolvers.Mutation.updateDisaster({}, { _id: 'id', input: validInput }, {}),
+      resolvers.Mutation.updateDisaster({}, { id: 1, input: validInput }, {}),
     ).rejects.toThrow(/not found/i);
   });
 
-  it('deleteDisaster: should throw UserInputError for missing _id', async () => {
+  it('deleteDisaster: should throw UserInputError for missing id', async () => {
     await expect(
-      // @ts-expect-error: purposely passing undefined _id to test error handling
-      resolvers.Mutation.deleteDisaster({}, { _id: undefined }, {}),
+      // @ts-expect-error: purposely passing undefined id to test error handling
+      resolvers.Mutation.deleteDisaster({}, { id: undefined }, {}),
     ).rejects.toThrow(UserInputError);
   });
 
@@ -133,15 +133,15 @@ describe('GraphQL resolvers coverage', () => {
     });
     await expect(
       // @ts-expect-error: purposely passing valid args to simulate service failure
-      resolvers.Mutation.deleteDisaster({}, { _id: 'id' }, {}),
+      resolvers.Mutation.deleteDisaster({}, { id: 1 }, {}),
     ).rejects.toThrow(ApolloError);
   });
 
   it('deleteDisaster: should throw ApolloError NOT_FOUND if delete returns null', async () => {
-    jest.spyOn(disasterService, 'deleteDisaster').mockResolvedValue(null);
+    jest.spyOn(disasterService, 'deleteDisaster').mockResolvedValue(false);
     await expect(
       // @ts-expect-error: purposely passing valid args to simulate not found
-      resolvers.Mutation.deleteDisaster({}, { _id: 'id' }, {}),
+      resolvers.Mutation.deleteDisaster({}, { id: 1 }, {}),
     ).rejects.toThrow(/not found/i);
   });
 
@@ -189,7 +189,7 @@ describe('GraphQL resolvers coverage', () => {
     });
     await expect(
       // @ts-expect-error: purposely passing valid input to simulate service failure
-      resolvers.Mutation.bulkUpdateDisasters({}, { updates: [{ _id: 'id', input: {} }] }, {}),
+      resolvers.Mutation.bulkUpdateDisasters({}, { updates: [{ id: 1, input: {} }] }, {}),
     ).rejects.toThrow(ApolloError);
   });
 

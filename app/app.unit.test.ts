@@ -1,6 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
-import { createApp, logger, isWhitelisted, isBlacklisted } from '../app';
-import { errorHandler } from '../middleware/error';
+import { createApp, logger, isWhitelisted, isBlacklisted } from '../app.js';
+import { errorHandler } from '../middleware/error.js';
 import type { Request, Response, NextFunction } from 'express';
 
 describe('app.ts utility/edge cases', () => {

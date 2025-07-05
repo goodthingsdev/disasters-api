@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import type { Application, Request, Response, NextFunction } from 'express';
 import type { Server } from 'http';
 import winston from 'winston';
-import { createApp, isWhitelisted, isBlacklisted } from './app';
+import { createApp, isWhitelisted, isBlacklisted } from './app.js';
 
 let server: Server;
 let application: Application;

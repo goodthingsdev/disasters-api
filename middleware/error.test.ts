@@ -1,7 +1,7 @@
 process.env.NODE_ENV = 'test';
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { errorHandler, errorResponse } from './error';
+import { errorHandler, errorResponse } from './error.js';
 import type { Request, Response, NextFunction } from 'express';
 import winston from 'winston';
 

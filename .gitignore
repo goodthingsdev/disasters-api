@@ -46,5 +46,5 @@ Thumbs.db
 # Ignore Docker Compose override files (optional)
 docker-compose.override.yml
 
-# Ignore local MongoDB data (if any)
+# Ignore local PostgreSQL data (if any)
 data/

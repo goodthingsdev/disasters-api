@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="73" failures="0" errors="0" time="7.938">
+  <testsuite name="E2E: Health and Metrics" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:10:55" time="4.024" tests="2">
+    <testcase classname="E2E: Health and Metrics should return 200 and status ok for /healthz" name="E2E: Health and Metrics should return 200 and status ok for /healthz" time="0.017">
+    </testcase>
+    <testcase classname="E2E: Health and Metrics should return Prometheus metrics at /metrics" name="E2E: Health and Metrics should return Prometheus metrics at /metrics" time="0.006">
+    </testcase>
+  </testsuite>
+  <testsuite name="Disaster API" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:10:59" time="1.165" tests="21">
+    <testcase classname="Disaster API should create a new disaster" name="Disaster API should create a new disaster" time="0.037">
+    </testcase>
+    <testcase classname="Disaster API should get all disasters" name="Disaster API should get all disasters" time="0.013">
+    </testcase>
+    <testcase classname="Disaster API should get a disaster by id" name="Disaster API should get a disaster by id" time="0.013">
+    </testcase>
+    <testcase classname="Disaster API should return 404 for missing disaster" name="Disaster API should return 404 for missing disaster" time="0.006">
+    </testcase>
+    <testcase classname="Disaster API should update a disaster" name="Disaster API should update a disaster" time="0.015">
+    </testcase>
+    <testcase classname="Disaster API should delete a disaster" name="Disaster API should delete a disaster" time="0.026">
+    </testcase>
+    <testcase classname="Disaster API should return disasters within a certain distance of a point" name="Disaster API should return disasters within a certain distance of a point" time="0.037">
+    </testcase>
+    <testcase classname="Disaster API should reject invalid ID on GET/PUT/DELETE" name="Disaster API should reject invalid ID on GET/PUT/DELETE" time="0.029">
+    </testcase>
+    <testcase classname="Disaster API should reject invalid disaster input on POST/PUT" name="Disaster API should reject invalid disaster input on POST/PUT" time="0.009">
+    </testcase>
+    <testcase classname="Disaster API should reject invalid query params for /near" name="Disaster API should reject invalid query params for /near" time="0.007">
+    </testcase>
+    <testcase classname="Disaster API should reject disasters with extreme/invalid numbers" name="Disaster API should reject disasters with extreme/invalid numbers" time="0.013">
+    </testcase>
+    <testcase classname="Disaster API should reject /near with extreme/invalid query params" name="Disaster API should reject /near with extreme/invalid query params" time="0.01">
+    </testcase>
+    <testcase classname="Disaster API should handle concurrent requests safely" name="Disaster API should handle concurrent requests safely" time="0.032">
+    </testcase>
+    <testcase classname="Disaster API edge and error cases should default page/limit and handle invalid values" name="Disaster API edge and error cases should default page/limit and handle invalid values" time="0.009">
+    </testcase>
+    <testcase classname="Disaster API edge and error cases should filter by type and date" name="Disaster API edge and error cases should filter by type and date" time="0.025">
+    </testcase>
+    <testcase classname="Disaster API edge and error cases should filter disasters by status" name="Disaster API edge and error cases should filter disasters by status" time="0.02">
+    </testcase>
+    <testcase classname="Disaster API edge and error cases should reject bulk insert with non-array or empty array" name="Disaster API edge and error cases should reject bulk insert with non-array or empty array" time="0.008">
+    </testcase>
+    <testcase classname="Disaster API edge and error cases should reject bulk update with non-array or empty array" name="Disaster API edge and error cases should reject bulk update with non-array or empty array" time="0.004">
+    </testcase>
+    <testcase classname="Disaster API edge and error cases should reject bulk update with invalid IDs" name="Disaster API edge and error cases should reject bulk update with invalid IDs" time="0.002">
+    </testcase>
+    <testcase classname="Disaster API edge and error cases should handle service errors in bulk insert/update" name="Disaster API edge and error cases should handle service errors in bulk insert/update" time="0.008">
+    </testcase>
+    <testcase classname="Disaster API edge and error cases should return 404 for update/delete with valid but non-existent ID" name="Disaster API edge and error cases should return 404 for update/delete with valid but non-existent ID" time="0.009">
+    </testcase>
+  </testsuite>
+  <testsuite name="GraphQL API" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:11:00" time="0.983" tests="8">
+    <testcase classname="GraphQL API should fetch paginated disasters" name="GraphQL API should fetch paginated disasters" time="0.032">
+    </testcase>
+    <testcase classname="GraphQL API should create a disaster" name="GraphQL API should create a disaster" time="0.013">
+    </testcase>
+    <testcase classname="GraphQL API should update a disaster" name="GraphQL API should update a disaster" time="0.026">
+    </testcase>
+    <testcase classname="GraphQL API should delete a disaster" name="GraphQL API should delete a disaster" time="0.016">
+    </testcase>
+    <testcase classname="GraphQL API should support disastersNear query" name="GraphQL API should support disastersNear query" time="0.219">
+    </testcase>
+    <testcase classname="GraphQL API should create disasters with different status values and filter by status" name="GraphQL API should create disasters with different status values and filter by status" time="0.05">
+    </testcase>
+    <testcase classname="GraphQL API should filter disasters by dateFrom, dateTo, and both" name="GraphQL API should filter disasters by dateFrom, dateTo, and both" time="0.029">
+    </testcase>
+    <testcase classname="GraphQL API should robustly filter disasters by dateFrom, dateTo, and both (inclusive, exclusive, and edge cases)" name="GraphQL API should robustly filter disasters by dateFrom, dateTo, and both (inclusive, exclusive, and edge cases)" time="0.051">
+    </testcase>
+  </testsuite>
+  <testsuite name="App" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:11:01" time="0.4" tests="3">
+    <testcase classname="App should return 200 for /healthz" name="App should return 200 for /healthz" time="0.009">
+    </testcase>
+    <testcase classname="App should return 404 for unknown route" name="App should return 404 for unknown route" time="0.002">
+    </testcase>
+    <testcase classname="App should return 200 for /readyz (mocked DB)" name="App should return 200 for /readyz (mocked DB)" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="app.ts utility/edge cases" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:11:02" time="0.346" tests="4">
+    <testcase classname="app.ts utility/edge cases should export createApp as a function" name="app.ts utility/edge cases should export createApp as a function" time="0.001">
+    </testcase>
+    <testcase classname="app.ts utility/edge cases should have a logger with error/info methods" name="app.ts utility/edge cases should have a logger with error/info methods" time="0">
+    </testcase>
+    <testcase classname="app.ts utility/edge cases isWhitelisted and isBlacklisted work as expected" name="app.ts utility/edge cases isWhitelisted and isBlacklisted work as expected" time="0.001">
+    </testcase>
+    <testcase classname="app.ts utility/edge cases should not throw when calling error handler with generic error" name="app.ts utility/edge cases should not throw when calling error handler with generic error" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="GraphQL resolvers coverage" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:11:02" time="0.324" tests="18">
+    <testcase classname="GraphQL resolvers coverage disasters: should throw ApolloError on service failure" name="GraphQL resolvers coverage disasters: should throw ApolloError on service failure" time="0.005">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage disaster: should throw UserInputError for missing id" name="GraphQL resolvers coverage disaster: should throw UserInputError for missing id" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage disaster: should throw ApolloError for service failure" name="GraphQL resolvers coverage disaster: should throw ApolloError for service failure" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage disastersNear: should throw UserInputError for invalid input" name="GraphQL resolvers coverage disastersNear: should throw UserInputError for invalid input" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage disastersNear: should throw ApolloError for service failure" name="GraphQL resolvers coverage disastersNear: should throw ApolloError for service failure" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage createDisaster: should throw UserInputError for invalid input" name="GraphQL resolvers coverage createDisaster: should throw UserInputError for invalid input" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage createDisaster: should throw ApolloError for service failure" name="GraphQL resolvers coverage createDisaster: should throw ApolloError for service failure" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage updateDisaster: should throw UserInputError for missing id" name="GraphQL resolvers coverage updateDisaster: should throw UserInputError for missing id" time="0">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage updateDisaster: should throw ApolloError for service failure" name="GraphQL resolvers coverage updateDisaster: should throw ApolloError for service failure" time="0.002">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage updateDisaster: should throw ApolloError NOT_FOUND if update returns null" name="GraphQL resolvers coverage updateDisaster: should throw ApolloError NOT_FOUND if update returns null" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage deleteDisaster: should throw UserInputError for missing id" name="GraphQL resolvers coverage deleteDisaster: should throw UserInputError for missing id" time="0">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage deleteDisaster: should throw ApolloError for service failure" name="GraphQL resolvers coverage deleteDisaster: should throw ApolloError for service failure" time="0">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage deleteDisaster: should throw ApolloError NOT_FOUND if delete returns null" name="GraphQL resolvers coverage deleteDisaster: should throw ApolloError NOT_FOUND if delete returns null" time="0">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage bulkInsertDisasters: should throw UserInputError for invalid input" name="GraphQL resolvers coverage bulkInsertDisasters: should throw UserInputError for invalid input" time="0">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage bulkInsertDisasters: should throw ApolloError for service failure" name="GraphQL resolvers coverage bulkInsertDisasters: should throw ApolloError for service failure" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage bulkUpdateDisasters: should throw UserInputError for invalid input" name="GraphQL resolvers coverage bulkUpdateDisasters: should throw UserInputError for invalid input" time="0">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage bulkUpdateDisasters: should throw ApolloError for service failure" name="GraphQL resolvers coverage bulkUpdateDisasters: should throw ApolloError for service failure" time="0.001">
+    </testcase>
+    <testcase classname="GraphQL resolvers coverage dummy test to satisfy Jest" name="GraphQL resolvers coverage dummy test to satisfy Jest" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="errorHandler middleware" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:11:02" time="0.222" tests="13">
+    <testcase classname="errorHandler middleware should handle generic errors and respond with 500" name="errorHandler middleware should handle generic errors and respond with 500" time="0.005">
+    </testcase>
+    <testcase classname="errorHandler middleware should handle errors with status and message" name="errorHandler middleware should handle errors with status and message" time="0.001">
+    </testcase>
+    <testcase classname="errorHandler middleware should call next if headersSent" name="errorHandler middleware should call next if headersSent" time="0.001">
+    </testcase>
+    <testcase classname="errorHandler middleware handles error as a string" name="errorHandler middleware handles error as a string" time="0.001">
+    </testcase>
+    <testcase classname="errorHandler middleware handles error as null (should not throw, but treat as 500)" name="errorHandler middleware handles error as null (should not throw, but treat as 500)" time="0.001">
+    </testcase>
+    <testcase classname="errorHandler middleware handles error with non-numeric status" name="errorHandler middleware handles error with non-numeric status" time="0">
+    </testcase>
+    <testcase classname="errorHandler middleware handles error with empty message" name="errorHandler middleware handles error with empty message" time="0.001">
+    </testcase>
+    <testcase classname="errorHandler middleware handles error with only code" name="errorHandler middleware handles error with only code" time="0.001">
+    </testcase>
+    <testcase classname="errorHandler middleware handles error with only details" name="errorHandler middleware handles error with only details" time="0.001">
+    </testcase>
+    <testcase classname="errorHandler middleware handles request with no id or res.locals.requestId" name="errorHandler middleware handles request with no id or res.locals.requestId" time="0.001">
+    </testcase>
+    <testcase classname="errorResponse utility edge cases defaults details to empty array" name="errorResponse utility edge cases defaults details to empty array" time="0.001">
+    </testcase>
+    <testcase classname="errorResponse utility edge cases omits code if not provided" name="errorResponse utility edge cases omits code if not provided" time="0">
+    </testcase>
+    <testcase classname="errorResponse utility edge cases uses custom status code" name="errorResponse utility edge cases uses custom status code" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="GraphQL error handling" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:11:03" time="0.156" tests="1">
+    <testcase classname="GraphQL error handling should be a placeholder" name="GraphQL error handling should be a placeholder" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="DisasterResponseDTO" errors="0" failures="0" skipped="0" timestamp="2025-07-05T22:11:03" time="0.145" tests="3">
+    <testcase classname="DisasterResponseDTO defaults status to active if missing" name="DisasterResponseDTO defaults status to active if missing" time="0.001">
+    </testcase>
+    <testcase classname="DisasterResponseDTO uses status if present" name="DisasterResponseDTO uses status if present" time="0">
+    </testcase>
+    <testcase classname="DisasterResponseDTO dummy test to satisfy Jest" name="DisasterResponseDTO dummy test to satisfy Jest" time="0">
+    </testcase>
+  </testsuite>
+</testsuites>

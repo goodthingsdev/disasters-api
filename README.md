@@ -1,13 +1,24 @@
 [![Coverage Status](https://img.shields.io/badge/coverage-local--report-brightgreen)](./coverage/lcov-report/index.html)
 
-# Disaster Data API (Node.js + TypeScript)
+# Disaster API
 
-This project is a Node.js backend for storing and serving disaster data (e.g., wildfires) via a RESTful API. It uses Express.js, MongoDB, and is written in **TypeScript**.
+This project is a Node.js backend for storing and serving disaster data (e.g., wildfires) via a RESTful API. It uses Express.js, PostgreSQL with PostGIS, and is containerized with Docker Compose.
+
+## Database: PostgreSQL + PostGIS
+
+- The API uses PostgreSQL with the PostGIS extension for geospatial data.
+- The default database credentials (see `docker-compose.yml`):
+  - Host: `postgres` (Docker Compose service name)
+  - Port: `5432`
+  - User: `disasters`
+  - Password: `disasters_pass`
+  - Database: `disasters_test`
+- The connection string is provided to the API via the `POSTGRES_URI` environment variable.
 
 ## Features
 
 - RESTful API for disaster data
-- MongoDB for storage
+- PostgreSQL with PostGIS for storage
 - Express.js best practices
 - TypeScript throughout
 - Docker Compose for local development
@@ -59,14 +70,14 @@ docker compose exec api npm test -- --coverage
 
 ### Docker Compose
 
-To run the API and MongoDB together:
+To run the API and PostgreSQL together:
 
 ```sh
 docker compose up --build
 ```
 
 - The API will be available at `http://localhost:3000` (or as configured).
-- The MongoDB container is also started.
+- The PostgreSQL container is also started.
 
 ### Running Tests
 
@@ -78,7 +89,7 @@ docker compose exec api npm test -- --coverage
 
 ### Running E2E (Integration) Tests
 
-End-to-end tests use a real MongoDB connection and are not run by default. To run the E2E test:
+End-to-end tests use a real PostgreSQL connection and are not run by default. To run the E2E test:
 
 1. **Build the project:**
 
@@ -91,7 +102,7 @@ End-to-end tests use a real MongoDB connection and are not run by default. To ru
    docker compose exec api npx jest dist/disasters.e2e.test.js --runTestsByPath --testTimeout=30000 --detectOpenHandles
    ```
 
-- Make sure MongoDB is running and accessible at the URI specified in your environment (defaults to `mongodb://localhost:27017/disasters_e2e`).
+- Make sure PostgreSQL is running and accessible at the URI specified in your environment (defaults to `postgresql://localhost:5432/disasters_test`).
 - The E2E test will seed the database before running and clean up after.
 
 ### API Documentation
@@ -115,7 +126,7 @@ This project uses multiple `.env` files for environment variable management:
 
 See `.env.example` for all available configuration options. Key variables:
 
-- `MONGO_URI` (required)
+- `POSTGRES_URI` (required)
 - `PORT` (default: 3000)
 - `CORS_ORIGIN` (default: \*)
 
@@ -327,31 +338,3 @@ This project enforces code style and formatting using [Prettier](https://prettie
 - Consistent code style improves readability and reduces friction in code reviews.
 - Linting helps catch bugs and anti-patterns early.
 - Pre-commit hooks prevent accidental commits of unformatted or problematic code.
-
-# Parallel-Safe Jest Tests with Alpine and Real MongoDB
-
-This project uses the real MongoDB container for integration/unit tests. To enable parallel-safe Jest runs (even on Alpine images), each Jest worker uses a unique test database:
-
-- The test DB is named `disasters_test_jest_worker{JEST_WORKER_ID}`.
-- The base Mongo URI is set via `MONGO_URI_BASE` (default: `mongodb://disasters:disasters_pass@mongo:27017`).
-- You can override `MONGO_URI_BASE` in your environment if needed.
-- No need for mongodb-memory-server (which is not Alpine-compatible).
-
-**This allows you to run Jest in parallel safely, even inside Alpine-based containers.**
-
-## Example: Running Tests in Parallel
-
-```
-docker compose exec api npm test -- --coverage
-```
-
-## Example: Running Tests Serially (for debugging)
-
-```
-docker compose exec api npm test -- --runInBand
-```
-
-## Troubleshooting
-
-- If you see DB connection errors, ensure your `mongo` container is running and accessible from the `api` container.
-- If you want to clean up all test DBs, you can drop databases matching `disasters_test_jest_worker*` in your MongoDB instance.

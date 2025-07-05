@@ -1,7 +1,19 @@
-module.exports = {
-  preset: 'ts-jest',
+import type { JestConfigWithTsJest } from 'ts-jest';
+
+const config: JestConfigWithTsJest = {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   setupFilesAfterEnv: ['./jest.setup.ts'],
+  extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+      tsconfig: 'tsconfig.json',
+    },
+  },
+  moduleNameMapper: {
+    '^(.{1,2}/.*).js$': '$1',
+  },
   testMatch: [
     '**/?(*.)+(test|spec).[jt]s',
     '**/app.test.ts',
@@ -16,7 +28,6 @@ module.exports = {
     '/node_modules/',
     '/dist/',
     'disasters.e2e.test.[jt]s$',
-    'e2e.test.[jt]s$',
     'app.exit.coverage.test.[jt]s$',
     'app.coverage.test.[jt]s$',
     'routes.coverage.test.[jt]s$',
@@ -42,9 +53,9 @@ module.exports = {
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
-    '\\.test\\.ts$',
-    '\\.e2e\\.test\\.ts$',
-    '\\.coverage\\.test\\.ts$',
+    '.test.ts$',
+    '.e2e.test.ts$',
+    '.coverage.test.ts$',
   ],
   coverageThreshold: {
     global: {
@@ -55,3 +66,5 @@ module.exports = {
     },
   },
 };
+
+export default config;

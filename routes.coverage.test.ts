@@ -1,38 +1,28 @@
 import { afterAll, beforeAll, describe, it, expect } from '@jest/globals';
 import request from 'supertest';
-import { createApp } from './app';
+import { createApp } from './app.js';
 import type { Server } from 'http';
 
-jest.mock('mongoose', () => ({
-  Schema: jest.fn(() => ({ index: jest.fn() })),
-  model: jest.fn(() => ({
-    collection: { createIndex: jest.fn().mockReturnValue(Promise.resolve()) },
+// Mock PostgreSQL Pool for routes coverage testing
+jest.mock('pg', () => ({
+  Pool: jest.fn().mockImplementation(() => ({
+    query: jest.fn().mockResolvedValue({ rows: [] }),
+    end: jest.fn().mockResolvedValue(undefined),
   })),
-  connect: jest.fn().mockResolvedValue(undefined),
-  connection: {
-    close: jest.fn().mockResolvedValue(undefined),
-    readyState: 1,
-    db: { admin: () => ({ ping: jest.fn().mockResolvedValue(true) }) },
-  },
 }));
-jest.mock('./disaster.model', () => {
-  // Patch: always return a mockQuery for find() with skip/limit/exec
-  const mockQuery = {
-    skip: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    exec: jest.fn().mockResolvedValue([]), // Always resolves to an array
-  };
-  const Disaster = {
-    find: jest.fn(() => mockQuery),
-    findById: jest.fn(),
-    findByIdAndUpdate: jest.fn(),
-    findByIdAndDelete: jest.fn(),
-    create: jest.fn(),
-    countDocuments: jest.fn().mockResolvedValue(0),
-    collection: { createIndex: jest.fn().mockResolvedValue(undefined) },
-  };
-  return { __esModule: true, default: Disaster };
-});
+
+jest.mock('./services/disaster.service', () => ({
+  getAllDisasters: jest
+    .fn()
+    .mockResolvedValue({ data: [], total: 0, page: 1, limit: 10, totalPages: 0 }),
+  getDisasterById: jest.fn().mockResolvedValue(null),
+  createDisaster: jest.fn().mockResolvedValue({ id: 1, type: 'fire', status: 'active' }),
+  updateDisaster: jest.fn().mockResolvedValue(null),
+  deleteDisaster: jest.fn().mockResolvedValue(null),
+  findDisastersNear: jest.fn().mockResolvedValue([]),
+  bulkInsertDisasters: jest.fn().mockResolvedValue([]),
+  bulkUpdateDisasters: jest.fn().mockResolvedValue([]),
+}));
 
 let server: Server;
 

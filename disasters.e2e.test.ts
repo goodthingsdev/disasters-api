@@ -1,31 +1,42 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
+import { Pool } from 'pg';
 import { createApp } from './app';
 
 let server: import('http').Server;
 let appInstance: import('express').Application;
+let pool: Pool;
 
 beforeAll(async () => {
   appInstance = await createApp();
   server = appInstance.listen(5001);
-  await mongoose.connect(process.env.MONGO_URI!);
-  const db = mongoose.connection.db;
-  if (!db) throw new Error('MongoDB connection failed');
-  // Seed the database with a known disaster
-  await db.collection('disasters').insertOne({
-    type: 'seeded-fire',
-    location: { type: 'Point', coordinates: [1, 2] },
-    date: '2025-01-01',
+
+  pool = new Pool({
+    connectionString: process.env.POSTGRES_URI!,
   });
+
+  // Test the database connection
+  await pool.query('SELECT 1');
+
+  // Seed the database with a known disaster
+  await pool.query(
+    `INSERT INTO disasters (type, location, date)
+     VALUES ($1, ST_SetSRID(ST_MakePoint($2, $3), 4326), $4)`,
+    ['seeded-fire', 1, 2, '2025-01-01'],
+  );
 });
 
 afterAll(async () => {
-  const db = mongoose.connection.db;
-  if (db) {
-    await db.collection('disasters').deleteMany({});
+  if (pool) {
+    await pool.query('DELETE FROM disasters WHERE type = $1', ['seeded-fire']);
+    await pool.end();
   }
-  await mongoose.connection.close();
   server.close();
+});
+
+beforeEach(async () => {
+  if (pool) {
+    await pool.query('DELETE FROM disasters');
+  }
 });
 
 describe('E2E: Disaster API', () => {

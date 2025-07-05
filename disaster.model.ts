@@ -1,52 +1,35 @@
-import mongoose, { Document } from 'mongoose';
-import { DisasterInput } from './dto/disaster.dto';
+// Disaster model for PostgreSQL
+// This file defines the TypeScript interface for a disaster and SQL for table creation
 
-// GeoJSON Point schema for location
-const geoPointSchema = new mongoose.Schema(
-  {
-    type: {
-      type: String,
-      enum: ['Point'],
-      required: true,
-      default: 'Point',
-    },
-    coordinates: {
-      type: [Number],
-      required: true,
-      validate: {
-        validator: (arr: number[]) =>
-          Array.isArray(arr) && arr.length === 2 && arr.every((n) => typeof n === 'number'),
-        message: 'Coordinates must be [lng, lat] as numbers.',
-      },
-    },
-  },
-  { _id: false },
-);
-
-const disasterSchema = new mongoose.Schema(
-  {
-    type: { type: String, required: true },
-    location: { type: geoPointSchema, required: true },
-    date: { type: String, required: true },
-    description: { type: String },
-    status: {
-      type: String,
-      enum: ['active', 'contained', 'resolved'],
-      default: 'active',
-      required: true,
-    },
-  },
-  { timestamps: true },
-);
-
-disasterSchema.index({ location: '2dsphere' });
-
-export interface DisasterDocument extends Document, DisasterInput {
-  status: string;
+export interface Disaster {
+  id: number;
+  type: string;
+  location: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
+  date: string | Date;
+  description: string;
+  status: 'active' | 'contained' | 'resolved';
   createdAt?: string | Date;
   updatedAt?: string | Date;
 }
 
-const Disaster = mongoose.model<DisasterDocument>('Disaster', disasterSchema);
+// Helper: SQL for creating the disasters table
+export const CREATE_DISASTERS_TABLE_SQL = `
+CREATE TABLE IF NOT EXISTS disasters (
+  id SERIAL PRIMARY KEY,
+  type VARCHAR(255) NOT NULL,
+  location GEOGRAPHY(POINT, 4326) NOT NULL,
+  date TIMESTAMP NOT NULL,
+  description TEXT,
+  status VARCHAR(32) NOT NULL DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+`;
 
-export { Disaster };
+// Helper: SQL for creating the geospatial index
+export const CREATE_LOCATION_INDEX_SQL = `
+CREATE INDEX IF NOT EXISTS idx_disasters_location ON disasters USING GIST(location);
+`;

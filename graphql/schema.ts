@@ -14,7 +14,7 @@ const typeDefs: DocumentNode = gql`
   }
 
   type Disaster {
-    _id: ID!
+    id: ID!
     type: String!
     location: Location!
     date: String!
@@ -36,7 +36,7 @@ const typeDefs: DocumentNode = gql`
   }
 
   input DisasterUpdateInput {
-    _id: ID!
+    id: ID!
     type: String
     location: LocationInput
     date: String
@@ -61,14 +61,14 @@ const typeDefs: DocumentNode = gql`
       dateTo: String
       status: DisasterStatus
     ): DisasterPage!
-    disaster(_id: ID!): Disaster
+    disaster(id: ID!): Disaster
     disastersNear(lat: Float!, lng: Float!, distance: Float!): [Disaster!]!
   }
 
   type Mutation {
     createDisaster(input: DisasterInput!): Disaster!
-    updateDisaster(_id: ID!, input: DisasterInput!): Disaster!
-    deleteDisaster(_id: ID!): Boolean!
+    updateDisaster(id: ID!, input: DisasterInput!): Disaster!
+    deleteDisaster(id: ID!): Boolean!
     bulkInsertDisasters(inputs: [DisasterInput!]!): [Disaster!]!
     bulkUpdateDisasters(updates: [DisasterUpdateInput!]!): Boolean!
   }

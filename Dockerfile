@@ -1,4 +1,4 @@
-# Use official Node.js LTS image (Debian-based for mongodb-memory-server compatibility)
+# Use official Node.js LTS image
 FROM node:20-slim
 
 # Set working directory
@@ -11,8 +11,8 @@ RUN npm install --force
 # Install nodemon globally for hot-reloading
 RUN npm install -g nodemon
 
-# Copy source code
-COPY . .
+# Don't copy source code here - it will be mounted as a volume
+# COPY . .
 
 # Expose port
 EXPOSE 3000
@@ -21,7 +21,7 @@ EXPOSE 3000
 ENV NODE_ENV=development
 
 # Start the app with nodemon for real-time reloads
-CMD ["nodemon", "index.js"]
+CMD ["npm", "run", "dev"]
 
 # Add Docker healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

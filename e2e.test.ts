@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { createApp } from './app';
+import { createApp } from './app.js';
 let appInstance: import('express').Application;
 let server: import('http').Server;
 

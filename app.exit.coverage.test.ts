@@ -1,16 +1,24 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import mongoose from 'mongoose';
+import { Pool } from 'pg';
 import { fork } from 'child_process';
 import path from 'path';
 
+let pool: Pool;
+
 describe('App exit/coverage', () => {
   beforeAll(async () => {
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGO_URI || '', { dbName: 'disasters_test' });
+    if (process.env.POSTGRES_URI) {
+      pool = new Pool({
+        connectionString: process.env.POSTGRES_URI,
+      });
+      // Test database connection
+      await pool.query('SELECT 1');
     }
   });
   afterAll(async () => {
-    await mongoose.disconnect();
+    if (pool) {
+      await pool.end();
+    }
   });
 
   it('should not call app.listen in app.ts', () => {
@@ -43,24 +51,24 @@ describe('App environment variable validation and exit', () => {
     child.on('exit', (code) => cb(code, stderr));
   }
 
-  it('should exit with code 1 if MONGO_URI is missing in production', (done) => {
-    runAppWithEnv({ NODE_ENV: 'production', MONGO_URI: '' }, (code, stderr) => {
+  it('should exit with code 1 if POSTGRES_URI is missing in production', (done) => {
+    runAppWithEnv({ NODE_ENV: 'production', POSTGRES_URI: '' }, (code, stderr) => {
       expect(code).toBe(1);
       expect(stderr).toMatch(/Invalid environment configuration/);
       done();
     });
   });
 
-  it('should not exit in test mode if MONGO_URI is missing', (done) => {
-    runAppWithEnv({ NODE_ENV: 'test', MONGO_URI: '' }, (code, stderr) => {
+  it('should not exit in test mode if POSTGRES_URI is missing', (done) => {
+    runAppWithEnv({ NODE_ENV: 'test', POSTGRES_URI: '' }, (code, stderr) => {
       expect(code).not.toBe(1);
       expect(stderr).toMatch(/Test environment: Invalid env config/);
       done();
     });
   });
 
-  it('should use fallback MONGO_URI in test/dev/ci', (done) => {
-    runAppWithEnv({ NODE_ENV: 'test', MONGO_URI: '' }, (code, stderr) => {
+  it('should use fallback POSTGRES_URI in test/dev/ci', (done) => {
+    runAppWithEnv({ NODE_ENV: 'test', POSTGRES_URI: '' }, (code, stderr) => {
       expect(stderr).toMatch(/Test environment: Invalid env config/);
       done();
     });
