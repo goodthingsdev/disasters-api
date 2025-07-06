@@ -102,4 +102,45 @@ describe('Disaster service coverage', () => {
     const deleted = await deleteDisaster(1);
     expect(deleted === null || typeof deleted === 'object').toBe(true);
   });
+
+  it('createDisaster: should throw on missing required fields', async () => {
+    await expect(createDisaster({} as any)).rejects.toThrow();
+    await expect(createDisaster({ type: '', location: null, date: '', status: '' } as any)).rejects.toThrow();
+  });
+
+  it('getAllDisasters: should handle invalid pagination and filter', async () => {
+    const result = await getAllDisasters({ skip: -1, limit: 0, filter: { type: 'fire', status: 'active', dateFrom: 'notadate', dateTo: 'notadate' } });
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('getDisasterById: should return null for invalid/empty id', async () => {
+    await expect(getDisasterById('')).resolves.toBeNull();
+    await expect(getDisasterById('not-a-uuid')).resolves.toBeNull();
+  });
+
+  it('updateDisaster: should return null for invalid id or no fields', async () => {
+    await expect(updateDisaster('', {})).resolves.toBeNull();
+    await expect(updateDisaster('not-a-uuid', {})).resolves.toBeNull();
+  });
+
+  it('deleteDisaster: should return false for invalid id', async () => {
+    await expect(deleteDisaster('')).resolves.toBe(false);
+    await expect(deleteDisaster('not-a-uuid')).resolves.toBe(false);
+  });
+
+  it('bulkInsertDisasters: should return [] for empty array', async () => {
+    await expect(bulkInsertDisasters([])).resolves.toEqual([]);
+  });
+
+  it('bulkUpdateDisasters: should handle empty and invalid updates', async () => {
+    const result = await bulkUpdateDisasters([]);
+    expect(result).toEqual({ matchedCount: 0, modifiedCount: 0 });
+    const result2 = await bulkUpdateDisasters([{ id: '', type: 'fire' } as any]);
+    expect(result2.matchedCount).toBe(1);
+  });
+
+  it('findDisastersNear: should handle invalid input', async () => {
+    await expect(findDisastersNear({ lat: NaN, lng: NaN, distance: NaN })).resolves.toEqual([]);
+    await expect(findDisastersNear({ lat: 9999, lng: 9999, distance: 1 })).resolves.toEqual([]);
+  });
 });

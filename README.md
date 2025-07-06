@@ -166,6 +166,7 @@ A multi-stage production Dockerfile is provided for small, secure images:
    docker build -f Dockerfile.production -t disasters-api:prod .
    ```
 2. **Run the container in production mode:**
+
    ```sh
    docker run -d \
      --env-file .env.docker \
@@ -200,6 +201,7 @@ This API exposes Prometheus-compatible metrics for monitoring and observability.
 
 - **How to Scrape:**
   - Add the following scrape config to your Prometheus server:
+
     ```yaml
     scrape_configs:
       - job_name: 'disaster-api'
