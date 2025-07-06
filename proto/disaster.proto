@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package disasters;
+
+message Disaster {
+  int32 id = 1;
+  string type = 2;
+  string location = 3; // WKT or GeoJSON string
+  string date = 4; // ISO8601 string
+  string description = 5;
+  string status = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message DisasterList {
+  repeated Disaster disasters = 1;
+}
+
+service DisasterService {
+  rpc GetDisasters (Empty) returns (DisasterList);
+  rpc GetDisasterById (DisasterId) returns (Disaster);
+  rpc CreateDisaster (Disaster) returns (Disaster);
+  rpc UpdateDisaster (Disaster) returns (Disaster);
+  rpc DeleteDisaster (DisasterId) returns (Empty);
+}
+
+message DisasterId {
+  int32 id = 1;
+}
+
+message Empty {}

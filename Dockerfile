@@ -11,6 +11,15 @@ RUN npm install --force
 # Install nodemon globally for hot-reloading
 RUN npm install -g nodemon
 
+# Install protobufjs CLI for code generation
+RUN npm install --save-dev protobufjs-cli
+
+# Copy proto files for code generation
+COPY proto/ ./proto/
+
+# Generate protobuf JS and TS files at build time
+RUN npm run proto:all
+
 # Don't copy source code here - it will be mounted as a volume
 # COPY . .
 

@@ -21,6 +21,8 @@ import {
 import { errorResponse } from '../middleware/error.js';
 import type { DisasterInput } from '../dto/disaster.dto';
 import type { Disaster } from '../disaster.model';
+// Protobuf support
+import * as disastersPb from '../proto/disaster_pb.js';
 
 function asyncHandler<T extends Request, U extends Response>(
   fn: (req: T, res: U, next: NextFunction) => Promise<unknown>,
@@ -32,6 +34,44 @@ function asyncHandler<T extends Request, U extends Response>(
 
 function isValidNumericId(id: string): boolean {
   return /^\d+$/.test(id) && parseInt(id, 10) > 0;
+}
+
+function isDisasterObject(obj: unknown): obj is Disaster {
+  return (
+    obj !== null && typeof obj === 'object' && 'id' in obj && 'type' in obj && 'location' in obj
+  );
+}
+
+// Helper for serializing Disaster to Protobuf
+function toProtoDisaster(disaster: Disaster) {
+  return disastersPb.disasters.Disaster.create({
+    id: disaster.id,
+    type: disaster.type,
+    location:
+      disaster.location &&
+      disaster.location.type === 'Point' &&
+      Array.isArray(disaster.location.coordinates)
+        ? JSON.stringify({
+            type: disaster.location.type,
+            coordinates: disaster.location.coordinates,
+          })
+        : '',
+    date: disaster.date instanceof Date ? disaster.date.toISOString() : disaster.date,
+    description: disaster.description,
+    status: disaster.status,
+    createdAt:
+      disaster.createdAt instanceof Date ? disaster.createdAt.toISOString() : disaster.createdAt,
+    updatedAt:
+      disaster.updatedAt instanceof Date ? disaster.updatedAt.toISOString() : disaster.updatedAt,
+  });
+}
+
+// Helper to check if client explicitly wants Protobuf
+function wantsProtobuf(req: Request): boolean {
+  const accept = req.headers.accept;
+  if (!accept) return false;
+  // Only return Protobuf if it's the first preference
+  return accept.split(',')[0].trim() === 'application/x-protobuf';
 }
 
 const router = Router();
@@ -60,7 +100,15 @@ router.get(
       limit: limitNum,
       filter,
     });
-    res.json({ data: disasters.map((d: Disaster) => new DisasterResponseDTO(d)) });
+    if (wantsProtobuf(req)) {
+      // Map to protobuf Disaster messages
+      const pbDisasters = disasters.map(toProtoDisaster);
+      const message = disastersPb.disasters.DisasterList.create({ disasters: pbDisasters });
+      const buffer = disastersPb.disasters.DisasterList.encode(message).finish();
+      res.type('application/x-protobuf').send(buffer);
+    } else {
+      res.json({ data: disasters.map((d: Disaster) => new DisasterResponseDTO(d)) });
+    }
   }),
 );
 
@@ -81,7 +129,14 @@ router.get(
     }
     const { lat, lng, distance } = value;
     const disasters = await findDisastersNear({ lng, lat, distance });
-    res.json(disasters.map((d: Disaster) => new DisasterResponseDTO(d)));
+    if (wantsProtobuf(req)) {
+      const pbDisasters = disasters.map(toProtoDisaster);
+      const message = disastersPb.disasters.DisasterList.create({ disasters: pbDisasters });
+      const buffer = disastersPb.disasters.DisasterList.encode(message).finish();
+      res.type('application/x-protobuf').send(buffer);
+    } else {
+      res.json(disasters.map((d: Disaster) => new DisasterResponseDTO(d)));
+    }
   }),
 );
 
@@ -101,7 +156,14 @@ router.post(
       const disasters = await bulkInsertDisasters(
         req.body.map((d: DisasterInput) => new DisasterInputDTO(d)),
       );
-      res.status(201).json({ data: disasters.map((d: Disaster) => new DisasterResponseDTO(d)) });
+      if (wantsProtobuf(req)) {
+        const pbDisasters = disasters.map(toProtoDisaster);
+        const message = disastersPb.disasters.DisasterList.create({ disasters: pbDisasters });
+        const buffer = disastersPb.disasters.DisasterList.encode(message).finish();
+        res.status(201).type('application/x-protobuf').send(buffer);
+      } else {
+        res.status(201).json({ data: disasters.map((d: Disaster) => new DisasterResponseDTO(d)) });
+      }
     } catch (err) {
       // Handle duplicate key or validation errors from PostgreSQL
       return errorResponse(res, {
@@ -152,7 +214,17 @@ router.put(
     }
     try {
       const result = await bulkUpdateDisasters(req.body);
-      res.json({ matchedCount: result.matchedCount, modifiedCount: result.modifiedCount });
+      if (wantsProtobuf(req)) {
+        // Only send counts in protobuf if needed, otherwise JSON
+        const pbResult = disastersPb.disasters.DisasterList.create({
+          disasters: [],
+        });
+        // Optionally, you could define a new protobuf message for counts
+        const buffer = disastersPb.disasters.DisasterList.encode(pbResult).finish();
+        res.type('application/x-protobuf').send(buffer);
+      } else {
+        res.json({ matchedCount: result.matchedCount, modifiedCount: result.modifiedCount });
+      }
     } catch (err) {
       return errorResponse(res, {
         error: 'Bulk update failed',
@@ -181,7 +253,13 @@ router.get(
         code: 'NOT_FOUND',
         status: 404,
       });
-    res.json(new DisasterResponseDTO(disaster));
+    if (wantsProtobuf(req)) {
+      const pbDisaster = toProtoDisaster(disaster);
+      const buffer = disastersPb.disasters.Disaster.encode(pbDisaster).finish();
+      res.type('application/x-protobuf').send(buffer);
+    } else {
+      res.json(new DisasterResponseDTO(disaster));
+    }
   }),
 );
 
@@ -198,7 +276,13 @@ router.post(
         status: 400,
       });
     const disaster = await createDisaster(new DisasterInputDTO(req.body));
-    res.status(201).json(new DisasterResponseDTO(disaster));
+    if (wantsProtobuf(req)) {
+      const pbDisaster = toProtoDisaster(disaster);
+      const buffer = disastersPb.disasters.Disaster.encode(pbDisaster).finish();
+      res.status(201).type('application/x-protobuf').send(buffer);
+    } else {
+      res.status(201).json(new DisasterResponseDTO(disaster));
+    }
   }),
 );
 
@@ -230,7 +314,13 @@ router.put(
         code: 'NOT_FOUND',
         status: 404,
       });
-    res.json(new DisasterResponseDTO(disaster));
+    if (wantsProtobuf(req)) {
+      const pbDisaster = toProtoDisaster(disaster);
+      const buffer = disastersPb.disasters.Disaster.encode(pbDisaster).finish();
+      res.type('application/x-protobuf').send(buffer);
+    } else {
+      res.json(new DisasterResponseDTO(disaster));
+    }
   }),
 );
 
@@ -251,7 +341,20 @@ router.delete(
         code: 'NOT_FOUND',
         status: 404,
       });
-    res.status(204).end();
+    if (wantsProtobuf(req)) {
+      if (isDisasterObject(disaster)) {
+        const pbDisaster = toProtoDisaster(disaster);
+        const buffer = disastersPb.disasters.Disaster.encode(pbDisaster).finish();
+        res.type('application/x-protobuf').send(buffer);
+      } else {
+        // Return an empty message if no object is returned
+        const empty = disastersPb.disasters.Empty.create();
+        const buffer = disastersPb.disasters.Empty.encode(empty).finish();
+        res.type('application/x-protobuf').send(buffer);
+      }
+    } else {
+      res.status(204).end();
+    }
   }),
 );
 

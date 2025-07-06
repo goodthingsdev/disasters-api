@@ -338,3 +338,42 @@ This project enforces code style and formatting using [Prettier](https://prettie
 - Consistent code style improves readability and reduces friction in code reviews.
 - Linting helps catch bugs and anti-patterns early.
 - Pre-commit hooks prevent accidental commits of unformatted or problematic code.
+
+## Protobuf Support (Content Negotiation)
+
+This API supports [Protocol Buffers (Protobuf)](https://developers.google.com/protocol-buffers) as an alternative to JSON for all disaster-related endpoints.
+
+- **Content Negotiation:**
+  - To receive responses in Protobuf format, set the `Accept` header to `application/x-protobuf`.
+  - If the `Accept` header is not set or is `application/json`, responses will be in JSON (default).
+  - All disaster REST endpoints support Protobuf (e.g., `GET /api/v1/disasters`, `POST /api/v1/disasters`, `GET /api/v1/disasters/:id`, etc.).
+- **Protobuf Schema:**
+  - The Protobuf schema is defined in [`proto/disaster.proto`](proto/disaster.proto).
+  - Generated files: [`proto/disaster_pb.js`](proto/disaster_pb.js), [`proto/disaster_pb.d.ts`](proto/disaster_pb.d.ts)
+- **Client Usage:**
+  - To request Protobuf, set the header:
+    ```sh
+    curl -H "Accept: application/x-protobuf" http://localhost:3000/api/v1/disasters
+    ```
+  - The response will be a binary Protobuf message. Use the schema in `proto/disaster.proto` to decode it in your client.
+  - For POST/PUT requests, you may send Protobuf-encoded bodies by setting `Content-Type: application/x-protobuf` (see OpenAPI for details).
+
+### Protobuf Code Generation
+
+Protobuf code is generated automatically during Docker builds and can also be generated manually:
+
+- **To generate Protobuf JS/TS files locally:**
+  ```sh
+  npm run proto:all
+  # or individually:
+  npm run proto:js
+  npm run proto:ts
+  ```
+- **During Docker build:**
+  - The Dockerfile runs `npm run proto:all` automatically, so generated files are always up to date in containers.
+- **Edit the schema:**
+  - Make changes in `proto/disaster.proto`, then re-run the codegen scripts above.
+
+See the [protobufjs CLI documentation](https://github.com/protobufjs/protobuf.js#pbjs-for-javascript) for more details.
+
+---

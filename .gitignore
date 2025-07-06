@@ -48,3 +48,7 @@ docker-compose.override.yml
 
 # Ignore local PostgreSQL data (if any)
 data/
+
+# Protobuf generated files
+proto/disaster_pb.js
+proto/disaster_pb.d.ts
