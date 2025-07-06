@@ -2,12 +2,12 @@
 
 # Disaster Data API (Node.js + TypeScript)
 
-This project is a Node.js backend for storing and serving disaster data (e.g., wildfires) via a RESTful API. It uses Express.js, MongoDB, and is written in **TypeScript**.
+This project is a Node.js backend for storing and serving disaster data (e.g., wildfires) via a RESTful API. It uses Express.js, PostgreSQL (with PostGIS), and is written in **TypeScript**.
 
 ## Features
 
 - RESTful API for disaster data
-- MongoDB for storage
+- PostgreSQL (with PostGIS) for storage
 - Express.js best practices
 - TypeScript throughout
 - Docker Compose for local development
@@ -27,5 +27,3 @@ To generate a coverage report, run:
 ```sh
 docker compose exec api npm test -- --coverage
 ```
-
----

@@ -10,14 +10,18 @@ jobs:
   lint-test-build:
     runs-on: ubuntu-latest
     services:
-      mongo:
-        image: mongo:7
+      postgres:
+        image: postgis/postgis:15-3.4
         ports:
-          - 27017:27017
+          - 5432:5432
+        env:
+          POSTGRES_DB: disasters_test
+          POSTGRES_USER: disasters
+          POSTGRES_PASSWORD: disasters_pass
         options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand('ping')'" --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd "pg_isready -U disasters" --health-interval 10s --health-timeout 5s --health-retries 5
     env:
-      MONGO_URI: mongodb://localhost:27017/disasters
+      POSTGRES_URI: postgresql://disasters:disasters_pass@localhost:5432/disasters_test
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
