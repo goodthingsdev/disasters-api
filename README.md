@@ -26,6 +26,15 @@ This project is a Node.js backend for storing and serving disaster data (e.g., w
 - Prometheus metrics
 - GraphQL endpoint
 - Comprehensive test suite (run inside Docker container)
+- Prisma ORM for schema management and database access (hybrid with raw SQL for geospatial queries)
+
+## Prisma & PostGIS Hybrid Approach
+
+- Prisma is used for all standard (non-geospatial) CRUD operations.
+- Geospatial queries (e.g., filtering by location, distance) use raw SQL via Prisma's `$queryRaw` due to current Prisma/PostGIS limitations.
+- The `location` field is defined as `Unsupported("geography(Point,4326)")` in `schema.prisma`.
+- See `services/disaster.service.ts` for examples of both standard and geospatial queries.
+- When Prisma adds full PostGIS support, raw SQL usage can be further minimized.
 
 ## Test Coverage
 

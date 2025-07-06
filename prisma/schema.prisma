@@ -1,0 +1,22 @@
+// Prisma schema for disasters API
+// Uses PostgreSQL with PostGIS (spatial types)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URI")
+}
+
+model Disaster {
+  id          Int      @id @default(autoincrement())
+  type        String
+  location    Unsupported("geography(Point,4326)")?
+  date        DateTime
+  description String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
