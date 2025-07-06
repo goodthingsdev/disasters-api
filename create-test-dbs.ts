@@ -65,10 +65,11 @@ async function ensureTestDbs() {
     try {
       await workerClient.query('CREATE EXTENSION IF NOT EXISTS postgis');
       await workerClient.query('CREATE EXTENSION IF NOT EXISTS postgis_raster');
-      // Ensure disasters table exists with correct schema (TIMESTAMP for date)
+      await workerClient.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
+      // Ensure disasters table exists with correct schema (UUID for id)
       await workerClient.query(`
         CREATE TABLE IF NOT EXISTS disasters (
-          id SERIAL PRIMARY KEY,
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           type VARCHAR(64) NOT NULL,
           location geography(Point, 4326) NOT NULL,
           date TIMESTAMP NOT NULL,
@@ -81,7 +82,9 @@ async function ensureTestDbs() {
       await workerClient.query(
         'CREATE INDEX IF NOT EXISTS idx_disasters_location ON disasters USING GIST(location)',
       );
-      console.log(`[create-test-dbs] PostGIS and PostGIS Raster extensions enabled in ${dbName}`);
+      console.log(
+        `[create-test-dbs] PostGIS, PostGIS Raster, and pgcrypto extensions enabled in ${dbName}`,
+      );
     } finally {
       await workerClient.end();
     }

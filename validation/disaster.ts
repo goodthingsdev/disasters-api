@@ -1,6 +1,8 @@
 // Joi validation schemas and helpers for disasters
 import Joi from 'joi';
 
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const disasterSchema = Joi.object({
   type: Joi.string().required(),
   location: Joi.object({
@@ -29,7 +31,7 @@ const bulkInsertSchema = Joi.array().items(disasterSchema).min(1).required();
 const bulkUpdateSchema = Joi.array()
   .items(
     Joi.object({
-      id: Joi.number().integer().positive().required(),
+      id: Joi.string().pattern(uuidRegex).required(),
       type: Joi.string(),
       location: Joi.object({
         type: Joi.string().valid('Point'),

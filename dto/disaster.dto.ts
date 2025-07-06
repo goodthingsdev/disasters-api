@@ -30,7 +30,7 @@ export class DisasterInputDTO implements DisasterInput {
 
 // For response shaping
 export interface DisasterResponse {
-  id: number;
+  id: string;
   type: string;
   location: { type: 'Point'; coordinates: [number, number] };
   date: string | Date;
@@ -41,7 +41,7 @@ export interface DisasterResponse {
 }
 
 export class DisasterResponseDTO implements DisasterResponse {
-  id: number;
+  id: string;
   type: string;
   location: { type: 'Point'; coordinates: [number, number] };
   date: string | Date;
@@ -51,8 +51,7 @@ export class DisasterResponseDTO implements DisasterResponse {
   status: string;
 
   constructor(disaster: DisasterResponse | import('../disaster.model').Disaster) {
-    // Use numeric id from PostgreSQL
-    this.id = disaster.id as number;
+    this.id = disaster.id as string;
     this.type = disaster.type;
     this.location = disaster.location;
     this.date = disaster.date;

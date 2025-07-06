@@ -76,7 +76,7 @@ describe('GraphQL API', () => {
       // Check DB
       const dbResult = await pool.query('SELECT id FROM disasters WHERE id = $1', [id]);
       // Check API
-      const query = `query { disaster(id: ${id}) { id } }`;
+      const query = `query { disaster(id: "${id}") { id } }`;
       const res = await request(appInstance).post('/graphql').send({ query });
       if (
         dbResult.rows.length > 0 &&
@@ -91,7 +91,7 @@ describe('GraphQL API', () => {
     }
     expect(found).toBeTruthy();
     // Now update it (send all required fields)
-    const updateMutation = `mutation { updateDisaster(id: ${id}, input: { type: "wildfire", location: { type: "Point", coordinates: [-120, 35] }, date: "2025-06-01T12:00:00Z", description: "Updated desc", status: contained }) { id description status type location { coordinates } date } }`;
+    const updateMutation = `mutation { updateDisaster(id: "${id}", input: { type: "wildfire", location: { type: "Point", coordinates: [-120, 35] }, date: "2025-06-01T12:00:00Z", description: "Updated desc", status: contained }) { id description status type location { coordinates } date } }`;
     const updateRes = await request(appInstance).post('/graphql').send({ query: updateMutation });
     if (updateRes.body.errors) {
       console.error(
@@ -135,7 +135,7 @@ describe('GraphQL API', () => {
       return;
     }
     // Now, delete it
-    const deleteMutation = `mutation { deleteDisaster(id: ${id}) }`;
+    const deleteMutation = `mutation { deleteDisaster(id: "${id}") }`;
     let deleteRes: request.Response | undefined = undefined;
     for (let i = 0; i < 10; i++) {
       deleteRes = await request(appInstance).post('/graphql').send({ query: deleteMutation });

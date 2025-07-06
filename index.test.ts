@@ -112,8 +112,8 @@ describe('Disaster API', () => {
   });
 
   it('should return 404 for missing disaster', async () => {
-    // Use a valid but non-existent numeric ID
-    const nonExistentId = 99999999;
+    // Use a valid but non-existent UUID
+    const nonExistentId = '99999999-9999-4999-9999-999999999999';
     const res = await request(appInstance).get(`/api/v1/disasters/${nonExistentId}`);
     expect(res.statusCode).toBe(404);
   });
@@ -250,15 +250,15 @@ describe('Disaster API', () => {
     for (const badId of badIds) {
       let res = await request(appInstance).get(`/api/v1/disasters/${badId}`);
       expect(res.statusCode).toBe(400);
-      expect(res.body.error).toMatch(/Invalid ID format/);
+      expect(res.body.error).toMatch(/Invalid disaster ID format/);
       res = await request(appInstance)
         .put(`/api/v1/disasters/${badId}`)
         .send({ type: 'x', location: { type: 'Point', coordinates: [1, 2] }, date: '2025-01-01' });
       expect(res.statusCode).toBe(400);
-      expect(res.body.error).toMatch(/Invalid ID format/);
+      expect(res.body.error).toMatch(/Invalid disaster ID format/);
       res = await request(appInstance).delete(`/api/v1/disasters/${badId}`);
       expect(res.statusCode).toBe(400);
-      expect(res.body.error).toMatch(/Invalid ID format/);
+      expect(res.body.error).toMatch(/Invalid disaster ID format/);
     }
   });
 
@@ -549,7 +549,7 @@ describe('Disaster API edge and error cases', () => {
   });
 
   it('should return 404 for update/delete with valid but non-existent ID', async () => {
-    const id = 88888888;
+    const id = '99999999-9999-4999-9999-999999999999';
     let res = await request(appInstance)
       .put(`/api/v1/disasters/${id}`)
       .send({

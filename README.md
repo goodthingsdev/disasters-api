@@ -173,6 +173,7 @@ A multi-stage production Dockerfile is provided for small, secure images:
      -p 3000:3000 \
      disasters-api:prod
    ```
+
    - The API will be available at `http://localhost:3000`.
    - Make sure to provide the correct environment variables (see `.env.docker`).
 
@@ -187,12 +188,10 @@ For more details, see the inline comments in the code and the OpenAPI spec in `o
 This API exposes Prometheus-compatible metrics for monitoring and observability.
 
 - **Endpoint:**
-
   - Metrics are available at: `http://localhost:3000/metrics`
   - The endpoint exposes standard process metrics (CPU, memory, event loop lag, etc.) and custom application metrics (e.g., HTTP request counts, durations, error rates).
 
 - **What is Exposed:**
-
   - `http_requests_total`: Count of HTTP requests by method, route, and status code.
   - `http_request_duration_seconds`: Histogram of request durations by route and method.
   - `process_*`: Node.js process metrics (CPU, memory, event loop, etc.).
@@ -200,7 +199,6 @@ This API exposes Prometheus-compatible metrics for monitoring and observability.
   - Additional custom metrics may be present depending on implementation.
 
 - **How to Scrape:**
-
   - Add the following scrape config to your Prometheus server:
     ```yaml
     scrape_configs:
@@ -208,11 +206,11 @@ This API exposes Prometheus-compatible metrics for monitoring and observability.
         static_configs:
           - targets: ['host.docker.internal:3000'] # Or use your host/IP
     ```
+
     - If running Prometheus in Docker, use `host.docker.internal` or the appropriate network alias.
     - Adjust the port if you run the API on a different port.
 
 - **Grafana Dashboards:**
-
   - You can visualize these metrics in Grafana by adding Prometheus as a data source and importing a Node.js/Express dashboard.
 
 - **Security:**

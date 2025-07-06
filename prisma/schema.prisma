@@ -11,7 +11,7 @@ datasource db {
 }
 
 model Disaster {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(uuid())
   type        String
   location    Unsupported("geography(Point,4326)")?
   date        DateTime

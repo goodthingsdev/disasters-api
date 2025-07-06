@@ -95,10 +95,10 @@ export const countDisasters = async (): Promise<number> => {
   return parseInt(result[0].count, 10);
 };
 
-export const getDisasterById = async (id: number): Promise<Disaster | null> => {
+export const getDisasterById = async (id: string): Promise<Disaster | null> => {
   const result = (await prisma.$queryRawUnsafe(
     `SELECT id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at
-     FROM disasters WHERE id = $1`,
+     FROM disasters WHERE id = $1::uuid`,
     id,
   )) as Disaster[];
   if (!result[0]) return null;
@@ -115,7 +115,7 @@ export const getDisasterById = async (id: number): Promise<Disaster | null> => {
 };
 
 export const updateDisaster = async (
-  id: number,
+  id: string,
   data: Partial<DisasterInput>,
 ): Promise<Disaster | null> => {
   const fields: string[] = [];
@@ -142,7 +142,7 @@ export const updateDisaster = async (
   const result = (await prisma.$queryRawUnsafe(
     `UPDATE disasters
      SET ${fields.join(', ')}
-     WHERE id = $1
+     WHERE id = $1::uuid
      RETURNING id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at`,
     ...values,
   )) as Disaster[];
@@ -158,36 +158,10 @@ export const updateDisaster = async (
   };
 };
 
-export const deleteDisaster = async (id: number): Promise<boolean> => {
-  const result = await prisma.$executeRawUnsafe('DELETE FROM disasters WHERE id = $1', id);
+export const deleteDisaster = async (id: string): Promise<boolean> => {
+  const result = await prisma.$executeRawUnsafe('DELETE FROM disasters WHERE id = $1::uuid', id);
   return result > 0;
 };
-
-export async function findDisastersNear(
-  arg1: number | { lat: number; lng: number; distance: number },
-  arg2?: number,
-  arg3?: number,
-): Promise<Disaster[]> {
-  let lng: number, lat: number, distanceKm: number;
-  if (typeof arg1 === 'object') {
-    ({ lat, lng, distance: distanceKm } = arg1);
-  } else {
-    lng = arg1;
-    lat = arg2 as number;
-    distanceKm = arg3 as number;
-  }
-  const result = (await prisma.$queryRawUnsafe(
-    `SELECT id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at,
-            ST_Distance(location, ST_GeomFromText('POINT(' || $1 || ' ' || $2 || ')')::geography) / 1000 as distance_km
-     FROM disasters
-     WHERE ST_DWithin(location, ST_GeomFromText('POINT(' || $1 || ' ' || $2 || ')')::geography, $3 * 1000)
-     ORDER BY distance_km`,
-    lng,
-    lat,
-    distanceKm,
-  )) as Disaster[];
-  return result;
-}
 
 export const bulkInsertDisasters = async (disasters: DisasterInput[]): Promise<Disaster[]> => {
   if (disasters.length === 0) return [];
@@ -224,7 +198,7 @@ export const bulkInsertDisasters = async (disasters: DisasterInput[]): Promise<D
 };
 
 export const bulkUpdateDisasters = async (
-  updates: Array<{ id: number } & Partial<DisasterInput>>,
+  updates: Array<{ id: string } & Partial<DisasterInput>>,
 ): Promise<{ matchedCount: number; modifiedCount: number }> => {
   let modifiedCount = 0;
   const matchedCount = updates.length;
@@ -237,3 +211,22 @@ export const bulkUpdateDisasters = async (
   }
   return { matchedCount, modifiedCount };
 };
+
+export async function findDisastersNear(arg1: {
+  lat: number;
+  lng: number;
+  distance: number;
+}): Promise<Disaster[]> {
+  const { lat, lng, distance } = arg1;
+  const result = (await prisma.$queryRawUnsafe(
+    `SELECT id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at,
+            ST_Distance(location, ST_GeomFromText('POINT(' || $1 || ' ' || $2 || ')')::geography) / 1000 as distance_km
+     FROM disasters
+     WHERE ST_DWithin(location, ST_GeomFromText('POINT(' || $1 || ' ' || $2 || ')')::geography, $3 * 1000)
+     ORDER BY distance_km`,
+    lng,
+    lat,
+    distance,
+  )) as Disaster[];
+  return result;
+}

@@ -3,7 +3,7 @@ syntax = "proto3";
 package disasters;
 
 message Disaster {
-  int32 id = 1;
+  string id = 1;
   string type = 2;
   string location = 3; // WKT or GeoJSON string
   string date = 4; // ISO8601 string
@@ -26,7 +26,7 @@ service DisasterService {
 }
 
 message DisasterId {
-  int32 id = 1;
+  string id = 1;
 }
 
 message Empty {}

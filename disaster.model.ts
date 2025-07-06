@@ -2,7 +2,7 @@
 // This file defines the TypeScript interface for a disaster and SQL for table creation
 
 export interface Disaster {
-  id: number;
+  id: string;
   type: string;
   location: {
     type: 'Point';
@@ -18,7 +18,7 @@ export interface Disaster {
 // Helper: SQL for creating the disasters table
 export const CREATE_DISASTERS_TABLE_SQL = `
 CREATE TABLE IF NOT EXISTS disasters (
-  id SERIAL PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type VARCHAR(255) NOT NULL,
   location GEOGRAPHY(POINT, 4326) NOT NULL,
   date TIMESTAMP NOT NULL,

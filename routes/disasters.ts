@@ -23,6 +23,7 @@ import type { DisasterInput } from '../dto/disaster.dto';
 import type { Disaster } from '../disaster.model';
 // Protobuf support
 import * as disastersPb from '../proto/disaster_pb.js';
+import { validate as isUuid } from 'uuid';
 
 function asyncHandler<T extends Request, U extends Response>(
   fn: (req: T, res: U, next: NextFunction) => Promise<unknown>,
@@ -32,8 +33,9 @@ function asyncHandler<T extends Request, U extends Response>(
   };
 }
 
-function isValidNumericId(id: string): boolean {
-  return /^\d+$/.test(id) && parseInt(id, 10) > 0;
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function isValidUuid(id: string): boolean {
+  return uuidRegex.test(id);
 }
 
 function isDisasterObject(obj: unknown): obj is Disaster {
@@ -45,7 +47,7 @@ function isDisasterObject(obj: unknown): obj is Disaster {
 // Helper for serializing Disaster to Protobuf
 function toProtoDisaster(disaster: Disaster) {
   return disastersPb.disasters.Disaster.create({
-    id: disaster.id,
+    id: disaster.id || '',
     type: disaster.type,
     location:
       disaster.location &&
@@ -75,6 +77,14 @@ function wantsProtobuf(req: Request): boolean {
 }
 
 const router = Router();
+
+// Validate UUID for :id parameter
+router.param('id', (req, res, next, id) => {
+  if (!isUuid(id)) {
+    return res.status(400).json({ error: 'Invalid disaster ID format (must be UUID)' });
+  }
+  next();
+});
 
 // Get all disasters with pagination and filtering
 router.get(
@@ -198,10 +208,7 @@ router.put(
       });
     // Only check IDs if Joi validation passes
     const invalidIds = req.body
-      .filter(
-        (item) =>
-          !item.id || typeof item.id !== 'number' || !Number.isInteger(item.id) || item.id <= 0,
-      )
+      .filter((item) => !item.id || typeof item.id !== 'string' || !uuidRegex.test(item.id))
       .map((item) => item.id);
     if (invalidIds.length > 0) {
       // For bulk, always return 'Invalid input' (never 'Invalid ID format')
@@ -240,13 +247,13 @@ router.put(
 router.get(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    if (!isValidNumericId(req.params.id))
+    if (!isValidUuid(req.params.id))
       return errorResponse(res, {
         error: 'Invalid ID format',
         code: 'INVALID_ID',
         status: 400,
       });
-    const disaster = await getDisasterById(parseInt(req.params.id, 10));
+    const disaster = await getDisasterById(req.params.id);
     if (!disaster)
       return errorResponse(res, {
         error: 'Not found',
@@ -290,7 +297,7 @@ router.post(
 router.put(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    if (!isValidNumericId(req.params.id))
+    if (!isValidUuid(req.params.id))
       return errorResponse(res, {
         error: 'Invalid ID format',
         code: 'INVALID_ID',
@@ -304,10 +311,7 @@ router.put(
         code: 'INVALID_INPUT',
         status: 400,
       });
-    const disaster = await updateDisaster(
-      parseInt(req.params.id, 10),
-      new DisasterInputDTO(req.body),
-    );
+    const disaster = await updateDisaster(req.params.id, new DisasterInputDTO(req.body));
     if (!disaster)
       return errorResponse(res, {
         error: 'Not found',
@@ -328,13 +332,13 @@ router.put(
 router.delete(
   '/:id',
   asyncHandler(async (req: Request, res: Response) => {
-    if (!isValidNumericId(req.params.id))
+    if (!isValidUuid(req.params.id))
       return errorResponse(res, {
         error: 'Invalid ID format',
         code: 'INVALID_ID',
         status: 400,
       });
-    const disaster = await deleteDisaster(parseInt(req.params.id, 10));
+    const disaster = await deleteDisaster(req.params.id);
     if (!disaster)
       return errorResponse(res, {
         error: 'Not found',

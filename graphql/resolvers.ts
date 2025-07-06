@@ -22,10 +22,6 @@ import { DisasterInput, DisasterResponse, DisasterResponseDTO } from '../dto/dis
 import { Disaster } from '../disaster.model.js';
 import Joi from 'joi';
 
-function isValidNumericId(id: string): boolean {
-  return /^\d+$/.test(id) && parseInt(id, 10) > 0;
-}
-
 function isApolloNotFoundError(err: unknown): boolean {
   return (
     typeof err === 'object' &&
@@ -43,9 +39,9 @@ const resolvers: IResolvers = {
         page?: number;
         limit?: number;
         type?: string;
+        status?: string;
         dateFrom?: string;
         dateTo?: string;
-        status?: string;
       },
     ) => {
       try {
@@ -80,8 +76,8 @@ const resolvers: IResolvers = {
     disaster: async (_: unknown, { id }: { id: string }) => {
       try {
         if (!id) throw new UserInputError('Missing id');
-        if (!isValidNumericId(id)) throw new UserInputError('Invalid id format');
-        const result: Disaster | null = await getDisasterById(parseInt(id, 10));
+        // Validate UUID format if needed
+        const result: Disaster | null = await getDisasterById(id);
         if (!result) throw new ApolloError('Not found', 'NOT_FOUND');
         return new DisasterResponseDTO(result);
       } catch (err) {
@@ -123,12 +119,12 @@ const resolvers: IResolvers = {
     ) => {
       try {
         if (!id) throw new UserInputError('Missing id');
-        if (!isValidNumericId(id)) throw new UserInputError('Invalid id format');
+        // Validate UUID format if needed
         const { error } = disasterSchema
           .fork(['type', 'location', 'date'], (field: Joi.Schema) => field.optional())
           .validate(input);
         if (error) throw new UserInputError(mapJoiErrorMessage(error.message));
-        const updated = await updateDisaster(parseInt(id, 10), input);
+        const updated = await updateDisaster(id, input);
         if (!updated) throw new ApolloError('Not found', 'NOT_FOUND');
         return new DisasterResponseDTO(updated);
       } catch (err) {
@@ -139,8 +135,8 @@ const resolvers: IResolvers = {
     deleteDisaster: async (_: unknown, { id }: { id: string }) => {
       try {
         if (!id) throw new UserInputError('Missing id');
-        if (!isValidNumericId(id)) throw new UserInputError('Invalid id format');
-        const result = await deleteDisaster(parseInt(id, 10));
+        // Validate UUID format if needed
+        const result = await deleteDisaster(id);
         if (!result) throw new ApolloError('Not found', 'NOT_FOUND');
         return !!result;
       } catch (err) {
@@ -164,26 +160,10 @@ const resolvers: IResolvers = {
       { updates }: { updates: Array<{ id: string; input: Partial<DisasterInput> }> },
     ) => {
       try {
-        if (!Array.isArray(updates)) {
-          throw new UserInputError(mapJoiErrorMessage('Invalid input: updates must be an array'));
-        }
-        // Transform the GraphQL input structure to match the validation schema
-        const validationArray = updates.map(({ id, input }) => ({
-          id: parseInt(id, 10),
-          ...input,
-        }));
-        const { error } = bulkUpdateSchema.validate(validationArray);
+        // Validate input using bulkUpdateSchema
+        const { error } = bulkUpdateSchema.validate(updates);
         if (error) throw new UserInputError(mapJoiErrorMessage(error.message));
-
-        // Map to the expected service format with proper typing
-        const updateOps = validationArray.map((item) => ({
-          id: item.id,
-          type: item.type,
-          location: item.location,
-          date: item.date,
-          description: item.description,
-          status: item.status as 'active' | 'contained' | 'resolved' | undefined,
-        }));
+        const updateOps = updates.map(({ id, input }) => ({ id, ...input }));
         await bulkUpdateDisasters(updateOps);
         return true;
       } catch (err) {
