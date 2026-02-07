@@ -94,6 +94,7 @@ When running this project with Docker on macOS (especially Apple Silicon / M-ser
 
 1. **Platform mismatch for PostGIS image:**
    The `postgis/postgis:15-3.4` image is built for `linux/amd64`. Docker Desktop on Apple Silicon runs it under emulation automatically, but you may see a warning:
+
    > `The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8)`
 
    This is expected and the container works correctly under emulation.
@@ -102,6 +103,7 @@ When running this project with Docker on macOS (especially Apple Silicon / M-ser
    The `docker-compose.yml` uses a bind mount (`.:/usr/src/app`) for live code reloading. An anonymous volume (`/usr/src/app/node_modules`) is used to prevent the host's macOS-native `node_modules` from overriding the container's Linux-native packages. This is critical because packages like `esbuild`, `tsx`, and Prisma's query engine include platform-specific binaries that differ between macOS ARM and Linux.
 
    If you see errors like `@esbuild/darwin-arm64 package is present but this platform needs @esbuild/linux-arm64`, the `node_modules` volume isolation is not working correctly. Ensure the anonymous volume line is present in `docker-compose.yml`:
+
    ```yaml
    volumes:
      - .:/usr/src/app
@@ -110,6 +112,7 @@ When running this project with Docker on macOS (especially Apple Silicon / M-ser
 
 3. **First-time setup after cloning:**
    After `docker compose up --build`, you may need to run these commands inside the container on first setup:
+
    ```sh
    # Generate Prisma client (for the container's Linux platform)
    docker compose exec api npx prisma generate
