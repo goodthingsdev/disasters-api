@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import Joi from 'joi';
 import express from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
+
 import { Pool } from 'pg';
 import winston from 'winston';
 import helmet from 'helmet';
@@ -226,8 +226,8 @@ async function createApp(pgPool?: Pool): Promise<express.Application> {
   // ApolloServer initialization (now synchronous)
   await initApollo(app);
 
-  // Only apply bodyParser.json() to REST routes
-  app.use('/api', bodyParser.json());
+  // Only apply JSON body parsing to REST routes (built into Express 5)
+  app.use('/api', express.json());
   app.use(helmet());
   app.use(hpp());
 
