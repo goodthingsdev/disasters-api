@@ -121,13 +121,13 @@ All required and optional variables are documented in `.env.example`. When
 running via Docker Compose, they are set in `docker-compose.yml` and no
 `.env` file is needed.
 
-| Variable | Required | Default | Description |
-| --- | --- | --- | --- |
-| `POSTGRES_URI` | Yes | -- | PostgreSQL connection string |
-| `NODE_ENV` | No | `development` | `development`, `test`, `ci`, or `production` |
-| `PORT` | No | `3000` | HTTP server port |
-| `CORS_ORIGIN` | No | `*` | Allowed CORS origins |
-| `LOG_LEVEL` | No | `info` | Winston log level |
+| Variable       | Required | Default       | Description                                  |
+| -------------- | -------- | ------------- | -------------------------------------------- |
+| `POSTGRES_URI` | Yes      | --            | PostgreSQL connection string                 |
+| `NODE_ENV`     | No       | `development` | `development`, `test`, `ci`, or `production` |
+| `PORT`         | No       | `3000`        | HTTP server port                             |
+| `CORS_ORIGIN`  | No       | `*`           | Allowed CORS origins                         |
+| `LOG_LEVEL`    | No       | `info`        | Winston log level                            |
 
 ### Running on macOS (Apple Silicon / ARM)
 
