@@ -1,6 +1,9 @@
 import request from 'supertest';
 import { createApp } from '../app';
-import * as disastersPb from '../proto/disaster_pb.js';
+import { createRequire } from 'module';
+import path from 'path';
+const requireCjs = createRequire(path.resolve(process.cwd(), 'package.json'));
+const disastersPb = requireCjs('./proto/disaster_pb.js');
 import type { Server } from 'http';
 
 describe('Protobuf Content Negotiation', () => {
