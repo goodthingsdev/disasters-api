@@ -259,6 +259,126 @@ describe('GraphQL API', () => {
     }
   });
 
+  it('should return total and totalPages that match filtered results by status', async () => {
+    // Seed: 3 active, 2 contained, 1 resolved
+    const seeds = [
+      { status: 'active', desc: 'A1' },
+      { status: 'active', desc: 'A2' },
+      { status: 'active', desc: 'A3' },
+      { status: 'contained', desc: 'C1' },
+      { status: 'contained', desc: 'C2' },
+      { status: 'resolved', desc: 'R1' },
+    ];
+    for (const s of seeds) {
+      const mutation = `mutation { createDisaster(input: { type: "flood", location: { type: "Point", coordinates: [0, 0] }, date: "2025-06-01T00:00:00Z", description: "${s.desc}", status: ${s.status} }) { id } }`;
+      const res = await request(appInstance).post('/graphql').send({ query: mutation });
+      failOnGraphQLErrors(res);
+      expect(res.body.data.createDisaster).toHaveProperty('id');
+    }
+
+    // Query active — expect total=3, data.length=3
+    let query = `query { disasters(status: active) { total totalPages data { id status } } }`;
+    let res = await request(appInstance).post('/graphql').send({ query });
+    failOnGraphQLErrors(res);
+    expect(res.body.data.disasters.total).toBe(3);
+    expect(res.body.data.disasters.data).toHaveLength(3);
+    expect(res.body.data.disasters.totalPages).toBe(1);
+    for (const d of res.body.data.disasters.data) {
+      expect(d.status).toBe('active');
+    }
+
+    // Query contained — expect total=2, data.length=2
+    query = `query { disasters(status: contained) { total totalPages data { id status } } }`;
+    res = await request(appInstance).post('/graphql').send({ query });
+    failOnGraphQLErrors(res);
+    expect(res.body.data.disasters.total).toBe(2);
+    expect(res.body.data.disasters.data).toHaveLength(2);
+    for (const d of res.body.data.disasters.data) {
+      expect(d.status).toBe('contained');
+    }
+
+    // Query resolved — expect total=1, data.length=1
+    query = `query { disasters(status: resolved) { total totalPages data { id status } } }`;
+    res = await request(appInstance).post('/graphql').send({ query });
+    failOnGraphQLErrors(res);
+    expect(res.body.data.disasters.total).toBe(1);
+    expect(res.body.data.disasters.data).toHaveLength(1);
+    expect(res.body.data.disasters.data[0].status).toBe('resolved');
+
+    // No filter — expect total=6
+    query = `query { disasters { total data { id } } }`;
+    res = await request(appInstance).post('/graphql').send({ query });
+    failOnGraphQLErrors(res);
+    expect(res.body.data.disasters.total).toBe(6);
+    expect(res.body.data.disasters.data).toHaveLength(6);
+  });
+
+  it('should return total and totalPages that match filtered results by type', async () => {
+    // Seed: 2 earthquakes, 1 flood, 1 wildfire
+    const seeds = [
+      { type: 'earthquake', desc: 'EQ1' },
+      { type: 'earthquake', desc: 'EQ2' },
+      { type: 'flood', desc: 'FL1' },
+      { type: 'wildfire', desc: 'WF1' },
+    ];
+    for (const s of seeds) {
+      const mutation = `mutation { createDisaster(input: { type: "${s.type}", location: { type: "Point", coordinates: [10, 20] }, date: "2025-07-01T00:00:00Z", description: "${s.desc}", status: active }) { id } }`;
+      const res = await request(appInstance).post('/graphql').send({ query: mutation });
+      failOnGraphQLErrors(res);
+    }
+
+    // Filter by earthquake — total=2
+    let query = `query { disasters(type: "earthquake") { total data { id type } } }`;
+    let res = await request(appInstance).post('/graphql').send({ query });
+    failOnGraphQLErrors(res);
+    expect(res.body.data.disasters.total).toBe(2);
+    expect(res.body.data.disasters.data).toHaveLength(2);
+    for (const d of res.body.data.disasters.data) {
+      expect(d.type).toBe('earthquake');
+    }
+
+    // Filter by flood — total=1
+    query = `query { disasters(type: "flood") { total data { id type } } }`;
+    res = await request(appInstance).post('/graphql').send({ query });
+    failOnGraphQLErrors(res);
+    expect(res.body.data.disasters.total).toBe(1);
+    expect(res.body.data.disasters.data[0].type).toBe('flood');
+
+    // No filter — total=4
+    query = `query { disasters { total } }`;
+    res = await request(appInstance).post('/graphql').send({ query });
+    failOnGraphQLErrors(res);
+    expect(res.body.data.disasters.total).toBe(4);
+  });
+
+  it('should return correct total with pagination and filters combined', async () => {
+    // Seed 5 active disasters
+    for (let i = 0; i < 5; i++) {
+      const mutation = `mutation { createDisaster(input: { type: "tornado", location: { type: "Point", coordinates: [${i}, ${i}] }, date: "2025-08-0${i + 1}T00:00:00Z", description: "Tornado ${i + 1}", status: active }) { id } }`;
+      const res = await request(appInstance).post('/graphql').send({ query: mutation });
+      failOnGraphQLErrors(res);
+    }
+    // Add 2 resolved to make sure they don't leak into counts
+    for (let i = 0; i < 2; i++) {
+      const mutation = `mutation { createDisaster(input: { type: "tornado", location: { type: "Point", coordinates: [${i}, ${i}] }, date: "2025-08-0${i + 1}T00:00:00Z", description: "Resolved ${i + 1}", status: resolved }) { id } }`;
+      const res = await request(appInstance).post('/graphql').send({ query: mutation });
+      failOnGraphQLErrors(res);
+    }
+
+    // Page 1, limit 2, status=active — total should still be 5, totalPages=3
+    const query = `query { disasters(status: active, page: 1, limit: 2) { total totalPages page limit data { id status } } }`;
+    const res = await request(appInstance).post('/graphql').send({ query });
+    failOnGraphQLErrors(res);
+    expect(res.body.data.disasters.total).toBe(5);
+    expect(res.body.data.disasters.totalPages).toBe(3);
+    expect(res.body.data.disasters.page).toBe(1);
+    expect(res.body.data.disasters.limit).toBe(2);
+    expect(res.body.data.disasters.data).toHaveLength(2);
+    for (const d of res.body.data.disasters.data) {
+      expect(d.status).toBe('active');
+    }
+  });
+
   it('should filter disasters by dateFrom, dateTo, and both', async () => {
     // Create disasters with different dates
     const disasters = [
