@@ -88,10 +88,31 @@ export const getAllDisasters = async (
   }));
 };
 
-export const countDisasters = async (): Promise<number> => {
-  const result = (await prisma.$queryRawUnsafe('SELECT COUNT(*) FROM disasters')) as {
-    count: string;
-  }[];
+export const countDisasters = async (filter: DisasterFilter = {}): Promise<number> => {
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+  let paramIndex = 1;
+  if (filter.type) {
+    conditions.push(`type = $${paramIndex++}`);
+    values.push(filter.type);
+  }
+  if (filter.status) {
+    conditions.push(`status = $${paramIndex++}`);
+    values.push(filter.status);
+  }
+  if (filter.dateFrom) {
+    conditions.push(`date >= $${paramIndex++}::timestamp`);
+    values.push(filter.dateFrom);
+  }
+  if (filter.dateTo) {
+    conditions.push(`date <= $${paramIndex++}::timestamp`);
+    values.push(filter.dateTo);
+  }
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const result = (await prisma.$queryRawUnsafe(
+    `SELECT COUNT(*) FROM disasters ${whereClause}`,
+    ...values,
+  )) as { count: string }[];
   return parseInt(result[0].count, 10);
 };
 
