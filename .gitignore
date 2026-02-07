@@ -36,8 +36,6 @@ Thumbs.db
 # Ignore compiled JS in source tree (should only be in dist/ or build/)
 *.js
 *.js.map
-!dist/
-!build/
 
 # Ignore test output
 *.test.js

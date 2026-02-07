@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   postgres:
     image: postgis/postgis:15-3.4
@@ -25,6 +24,7 @@ services:
     restart: always
     volumes:
       - .:/usr/src/app
+      - /usr/src/app/node_modules
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/api-docs']
       interval: 10s
