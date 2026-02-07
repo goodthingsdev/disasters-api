@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -7,6 +7,8 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: env('POSTGRES_URI'),
+    // Use process.env with a fallback so prisma generate succeeds at Docker
+    // build time (no DB connection needed) without requiring the env var.
+    url: process.env.POSTGRES_URI ?? 'postgresql://localhost:5432/placeholder',
   },
 });

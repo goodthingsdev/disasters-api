@@ -53,7 +53,6 @@ const envSchema = Joi.object({
   PORT: Joi.number().integer().min(1).max(65535).default(3000),
   POSTGRES_URI: Joi.string().uri().required(),
   CORS_ORIGIN: Joi.string().allow('*').default('*'),
-  API_KEY: Joi.string().optional(),
   // Add more as needed
 }).unknown();
 
@@ -96,10 +95,6 @@ function register404Handler(req: express.Request, res: express.Response) {
 
 // --- ApolloServer initialization ---
 let apolloServer: ApolloServer | undefined;
-let apolloReadyResolve: (() => void) | undefined;
-const apolloReady: Promise<void> = new Promise((resolve) => {
-  apolloReadyResolve = resolve;
-});
 async function initApollo(app: express.Application): Promise<void> {
   if (!apolloServer) {
     apolloServer = new ApolloServer({
@@ -116,7 +111,6 @@ async function initApollo(app: express.Application): Promise<void> {
     await apolloServer.start();
     // Mount Apollo Server v4 via expressMiddleware on /graphql
     app.use('/graphql', express.json(), expressMiddleware(apolloServer));
-    if (apolloReadyResolve) apolloReadyResolve();
   }
 }
 
@@ -478,4 +472,4 @@ function isBlacklisted(ip: string): boolean {
   return IP_BLACKLIST.length > 0 && IP_BLACKLIST.includes(ip);
 }
 
-export { createApp, apolloReady, gracefulShutdown, logger, isWhitelisted, isBlacklisted };
+export { createApp, gracefulShutdown, logger, isWhitelisted, isBlacklisted };
