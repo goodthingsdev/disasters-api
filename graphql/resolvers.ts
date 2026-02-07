@@ -22,13 +22,6 @@ import { DisasterInput, DisasterResponse, DisasterResponseDTO } from '../dto/dis
 import { Disaster } from '../disaster.model.js';
 import Joi from 'joi';
 
-function isGraphQLNotFoundError(err: unknown): boolean {
-  return (
-    err instanceof GraphQLError &&
-    (err as GraphQLError).extensions?.code === 'NOT_FOUND'
-  );
-}
-
 const resolvers: IResolvers = {
   Query: {
     disasters: async (
@@ -68,7 +61,9 @@ const resolvers: IResolvers = {
           totalPages: Math.ceil(total / limit),
         };
       } catch {
-        throw new GraphQLError('Failed to fetch disasters', { extensions: { code: 'INTERNAL_ERROR' } });
+        throw new GraphQLError('Failed to fetch disasters', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
       }
     },
     disaster: async (_: unknown, { id }: { id: string }) => {
@@ -80,7 +75,9 @@ const resolvers: IResolvers = {
         return new DisasterResponseDTO(result);
       } catch (err) {
         if (err instanceof GraphQLError) throw err;
-        throw new GraphQLError('Failed to fetch disaster', { extensions: { code: 'INTERNAL_ERROR' } });
+        throw new GraphQLError('Failed to fetch disaster', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
       }
     },
     disastersNear: async (
@@ -89,13 +86,18 @@ const resolvers: IResolvers = {
     ) => {
       try {
         const { error } = nearQuerySchema.validate({ lat, lng, distance });
-        if (error) throw new GraphQLError(mapJoiErrorMessage(error.message), { extensions: { code: 'BAD_USER_INPUT' } });
+        if (error)
+          throw new GraphQLError(mapJoiErrorMessage(error.message), {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
         return (await findDisastersNear({ lat, lng, distance })).map(
           (doc: Disaster) => new DisasterResponseDTO(doc),
         );
       } catch (err) {
         if (err instanceof GraphQLError) throw err;
-        throw new GraphQLError('Failed to fetch disasters near location', { extensions: { code: 'INTERNAL_ERROR' } });
+        throw new GraphQLError('Failed to fetch disasters near location', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
       }
     },
   },
@@ -103,12 +105,17 @@ const resolvers: IResolvers = {
     createDisaster: async (_: unknown, { input }: { input: DisasterInput }) => {
       try {
         const { error } = disasterSchema.validate(input);
-        if (error) throw new GraphQLError(mapJoiErrorMessage(error.message), { extensions: { code: 'BAD_USER_INPUT' } });
+        if (error)
+          throw new GraphQLError(mapJoiErrorMessage(error.message), {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
         const created = await createDisaster(input);
         return new DisasterResponseDTO(created);
       } catch (err) {
         if (err instanceof GraphQLError) throw err;
-        throw new GraphQLError('Failed to create disaster', { extensions: { code: 'INTERNAL_ERROR' } });
+        throw new GraphQLError('Failed to create disaster', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
       }
     },
     updateDisaster: async (
@@ -121,13 +128,18 @@ const resolvers: IResolvers = {
         const { error } = disasterSchema
           .fork(['type', 'location', 'date'], (field: Joi.Schema) => field.optional())
           .validate(input);
-        if (error) throw new GraphQLError(mapJoiErrorMessage(error.message), { extensions: { code: 'BAD_USER_INPUT' } });
+        if (error)
+          throw new GraphQLError(mapJoiErrorMessage(error.message), {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
         const updated = await updateDisaster(id, input);
         if (!updated) throw new GraphQLError('Not found', { extensions: { code: 'NOT_FOUND' } });
         return new DisasterResponseDTO(updated);
       } catch (err) {
         if (err instanceof GraphQLError) throw err;
-        throw new GraphQLError('Failed to update disaster', { extensions: { code: 'INTERNAL_ERROR' } });
+        throw new GraphQLError('Failed to update disaster', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
       }
     },
     deleteDisaster: async (_: unknown, { id }: { id: string }) => {
@@ -139,18 +151,25 @@ const resolvers: IResolvers = {
         return !!result;
       } catch (err) {
         if (err instanceof GraphQLError) throw err;
-        throw new GraphQLError('Failed to delete disaster', { extensions: { code: 'INTERNAL_ERROR' } });
+        throw new GraphQLError('Failed to delete disaster', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
       }
     },
     bulkInsertDisasters: async (_: unknown, { disasters }: { disasters: DisasterInput[] }) => {
       try {
         const { error } = bulkInsertSchema.validate({ disasters });
-        if (error) throw new GraphQLError(mapJoiErrorMessage(error.message), { extensions: { code: 'BAD_USER_INPUT' } });
+        if (error)
+          throw new GraphQLError(mapJoiErrorMessage(error.message), {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
         const inserted = await bulkInsertDisasters(disasters);
         return inserted.map((doc: Disaster) => new DisasterResponseDTO(doc));
       } catch (err) {
         if (err instanceof GraphQLError) throw err;
-        throw new GraphQLError('Failed to bulk insert disasters', { extensions: { code: 'INTERNAL_ERROR' } });
+        throw new GraphQLError('Failed to bulk insert disasters', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
       }
     },
     bulkUpdateDisasters: async (
@@ -160,13 +179,18 @@ const resolvers: IResolvers = {
       try {
         // Validate input using bulkUpdateSchema
         const { error } = bulkUpdateSchema.validate(updates);
-        if (error) throw new GraphQLError(mapJoiErrorMessage(error.message), { extensions: { code: 'BAD_USER_INPUT' } });
+        if (error)
+          throw new GraphQLError(mapJoiErrorMessage(error.message), {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
         const updateOps = updates.map(({ id, input }) => ({ id, ...input }));
         await bulkUpdateDisasters(updateOps);
         return true;
       } catch (err) {
         if (err instanceof GraphQLError) throw err;
-        throw new GraphQLError('Failed to bulk update disasters', { extensions: { code: 'INTERNAL_ERROR' } });
+        throw new GraphQLError('Failed to bulk update disasters', {
+          extensions: { code: 'INTERNAL_ERROR' },
+        });
       }
     },
   },
