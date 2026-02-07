@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install --force
+RUN npm install
 
 # Install nodemon globally for hot-reloading
 RUN npm install -g nodemon
