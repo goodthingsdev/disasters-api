@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import Joi from 'joi';
 import express from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
+
 import { Pool } from 'pg';
 import winston from 'winston';
 import helmet from 'helmet';
@@ -14,13 +14,13 @@ import fs from 'fs';
 import path from 'path';
 import hpp from 'hpp';
 import client from 'prom-client';
-import { ApolloServer } from 'apollo-server-express';
+import { ApolloServer } from '@apollo/server';
+import { expressMiddleware } from '@as-integrations/express5';
 import { router } from './routes/disasters.js';
 import { typeDefs } from './graphql/schema.js';
 import { resolvers } from './graphql/resolvers.js';
 import { errorHandler } from './middleware/error.js';
-import type { GraphQLError, GraphQLFormattedError } from 'graphql';
-import type { GraphQLResponse } from 'apollo-server-types';
+import type { GraphQLFormattedError } from 'graphql';
 import { CREATE_DISASTERS_TABLE_SQL, CREATE_LOCATION_INDEX_SQL } from './disaster.model.js';
 
 dotenv.config();
@@ -53,7 +53,6 @@ const envSchema = Joi.object({
   PORT: Joi.number().integer().min(1).max(65535).default(3000),
   POSTGRES_URI: Joi.string().uri().required(),
   CORS_ORIGIN: Joi.string().allow('*').default('*'),
-  API_KEY: Joi.string().optional(),
   // Add more as needed
 }).unknown();
 
@@ -94,41 +93,24 @@ function register404Handler(req: express.Request, res: express.Response) {
   res.status(404).json({ error: 'Not found', url: req.originalUrl });
 }
 
-// --- ApolloServer initialization: always apply to app before any /graphql route ---
+// --- ApolloServer initialization ---
 let apolloServer: ApolloServer | undefined;
-let apolloReadyResolve: (() => void) | undefined;
-const apolloReady: Promise<void> = new Promise((resolve) => {
-  apolloReadyResolve = resolve;
-});
-async function initApollo(app?: express.Application): Promise<void> {
+async function initApollo(app: express.Application): Promise<void> {
   if (!apolloServer) {
     apolloServer = new ApolloServer({
       typeDefs,
       resolvers,
-      formatError: (error: GraphQLError): GraphQLFormattedError => {
-        const msg =
-          '[GraphQL ERROR] ' + (error && error.stack ? error.stack : JSON.stringify(error));
+      formatError: (formattedError: GraphQLFormattedError): GraphQLFormattedError => {
+        const msg = '[GraphQL ERROR] ' + JSON.stringify(formattedError);
         console.error(msg);
-        if (logger && logger.error) logger.error('[GraphQL ERROR]', { error });
+        if (logger && logger.error) logger.error('[GraphQL ERROR]', { error: formattedError });
         if (process && process.stderr && process.stderr.write) process.stderr.write(msg + '\n');
-        return {
-          message: error.message,
-          path: error.path,
-          locations: error.locations,
-          extensions: error.extensions,
-        };
-      },
-      formatResponse: (response: GraphQLResponse): GraphQLResponse | null => {
-        if (response.errors && Array.isArray(response.errors)) {
-          console.error('[GraphQL RESPONSE ERRORS]', JSON.stringify(response.errors));
-        }
-        return response;
+        return formattedError;
       },
     });
     await apolloServer.start();
-    // @ts-expect-error: Suppress Application type mismatch between express and apollo-server-express
-    apolloServer.applyMiddleware({ app, path: '/graphql' });
-    if (apolloReadyResolve) apolloReadyResolve();
+    // Mount Apollo Server v4 via expressMiddleware on /graphql
+    app.use('/graphql', express.json(), expressMiddleware(apolloServer));
   }
 }
 
@@ -226,8 +208,8 @@ async function createApp(pgPool?: Pool): Promise<express.Application> {
   // ApolloServer initialization (now synchronous)
   await initApollo(app);
 
-  // Only apply bodyParser.json() to REST routes
-  app.use('/api', bodyParser.json());
+  // Only apply JSON body parsing to REST routes (built into Express 5)
+  app.use('/api', express.json());
   app.use(helmet());
   app.use(hpp());
 
@@ -490,4 +472,4 @@ function isBlacklisted(ip: string): boolean {
   return IP_BLACKLIST.length > 0 && IP_BLACKLIST.includes(ip);
 }
 
-export { createApp, apolloReady, gracefulShutdown, logger, isWhitelisted, isBlacklisted };
+export { createApp, gracefulShutdown, logger, isWhitelisted, isBlacklisted };

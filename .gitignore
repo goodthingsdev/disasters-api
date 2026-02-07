@@ -16,6 +16,7 @@ yarn-error.log*
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Coverage reports
 coverage/
@@ -36,8 +37,7 @@ Thumbs.db
 # Ignore compiled JS in source tree (should only be in dist/ or build/)
 *.js
 *.js.map
-!dist/
-!build/
+!eslint.config.js
 
 # Ignore test output
 *.test.js
@@ -52,3 +52,6 @@ data/
 # Protobuf generated files
 proto/disaster_pb.js
 proto/disaster_pb.d.ts
+
+# Prisma generated client
+generated/

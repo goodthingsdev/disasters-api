@@ -52,41 +52,82 @@ docker compose exec api npm test -- --coverage
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (for development, not needed if using Docker)
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
+- [Node.js 22 LTS](https://nodejs.org/) (only for local non-Docker development)
 
-### Development
+### Quick Start (Docker -- recommended)
 
-1. **Install dependencies:**
-
-   ```sh
-   npm install
-   ```
-
-2. **Build TypeScript:**
-
-   ```sh
-   npm run build
-   # Output will be in ./dist/
-   ```
-
-3. **Run locally:**
-   ```sh
-   npm start
-   # or, for development with auto-reload:
-   npm run dev
-   ```
-
-### Docker Compose
-
-To run the API and PostgreSQL together:
+Build and start the API + PostgreSQL with a single command:
 
 ```sh
 docker compose up --build
 ```
 
-- The API will be available at `http://localhost:3000` (or as configured).
-- The PostgreSQL container is also started.
+The API is available at `http://localhost:3000` once the container is healthy.
+Protobuf files, Prisma client, and all dependencies are generated during the
+Docker build -- no manual steps required.
+
+Useful endpoints to verify the server is running:
+
+```sh
+curl http://localhost:3000/healthz    # health check
+curl http://localhost:3000/readyz     # readiness (DB connected)
+curl http://localhost:3000/api/v1/disasters  # REST API
+```
+
+### Running Tests
+
+Tests run inside the Docker container. The test framework sets `NODE_ENV=test`
+and configures per-worker test databases automatically:
+
+```sh
+docker compose exec api npm test
+```
+
+### Local Development (without Docker)
+
+If you prefer running Node.js directly on your machine:
+
+1. Copy the environment template and adjust the database URL:
+
+   ```sh
+   cp .env.example .env
+   # Edit .env -- point POSTGRES_URI to your local PostgreSQL + PostGIS instance
+   ```
+
+2. Install dependencies:
+
+   ```sh
+   nvm use            # uses the version pinned in .nvmrc (Node 22)
+   npm install
+   ```
+
+3. Generate Prisma client and protobuf files:
+
+   ```sh
+   npx prisma generate
+   npm run proto:all
+   ```
+
+4. Start the dev server (auto-reloads on file changes):
+
+   ```sh
+   npm run dev
+   ```
+
+### Environment Variables
+
+All required and optional variables are documented in `.env.example`. When
+running via Docker Compose, they are set in `docker-compose.yml` and no
+`.env` file is needed.
+
+| Variable       | Required | Default       | Description                                  |
+| -------------- | -------- | ------------- | -------------------------------------------- |
+| `POSTGRES_URI` | Yes      | --            | PostgreSQL connection string                 |
+| `NODE_ENV`     | No       | `development` | `development`, `test`, `ci`, or `production` |
+| `PORT`         | No       | `3000`        | HTTP server port                             |
+| `CORS_ORIGIN`  | No       | `*`           | Allowed CORS origins                         |
+| `LOG_LEVEL`    | No       | `info`        | Winston log level                            |
 
 ### Running on macOS (Apple Silicon / ARM)
 
@@ -94,6 +135,7 @@ When running this project with Docker on macOS (especially Apple Silicon / M-ser
 
 1. **Platform mismatch for PostGIS image:**
    The `postgis/postgis:15-3.4` image is built for `linux/amd64`. Docker Desktop on Apple Silicon runs it under emulation automatically, but you may see a warning:
+
    > `The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8)`
 
    This is expected and the container works correctly under emulation.
@@ -101,27 +143,7 @@ When running this project with Docker on macOS (especially Apple Silicon / M-ser
 2. **Node modules volume isolation (bind mount + native binaries):**
    The `docker-compose.yml` uses a bind mount (`.:/usr/src/app`) for live code reloading. An anonymous volume (`/usr/src/app/node_modules`) is used to prevent the host's macOS-native `node_modules` from overriding the container's Linux-native packages. This is critical because packages like `esbuild`, `tsx`, and Prisma's query engine include platform-specific binaries that differ between macOS ARM and Linux.
 
-   If you see errors like `@esbuild/darwin-arm64 package is present but this platform needs @esbuild/linux-arm64`, the `node_modules` volume isolation is not working correctly. Ensure the anonymous volume line is present in `docker-compose.yml`:
-   ```yaml
-   volumes:
-     - .:/usr/src/app
-     - /usr/src/app/node_modules
-   ```
-
-3. **First-time setup after cloning:**
-   After `docker compose up --build`, you may need to run these commands inside the container on first setup:
-   ```sh
-   # Generate Prisma client (for the container's Linux platform)
-   docker compose exec api npx prisma generate
-
-   # Apply database migrations
-   docker compose exec api npx prisma migrate deploy
-
-   # Generate Protobuf JS/TS files (if not already present)
-   docker compose exec api npm run proto:all
-   ```
-
-4. **Prisma OpenSSL warning:**
+3. **Prisma OpenSSL warning:**
    You may see a Prisma warning about failing to detect the libssl/openssl version. This is cosmetic and does not affect functionality. If needed, install OpenSSL in the container by adding to the Dockerfile:
    ```dockerfile
    RUN apt-get update -y && apt-get install -y openssl

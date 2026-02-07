@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { createApp, apolloReady } from './app.js';
+import { createApp } from './app.js';
 import { Server } from 'http';
 
 console.log('[index.ts] Entry point reached');
@@ -16,13 +16,6 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function start() {
-  // Wait for ApolloServer to be ready (if present)
-  // Use optional chaining to safely call __APOLLO_INIT__ if it exists
-  if (
-    typeof (apolloReady as { __APOLLO_INIT__?: () => Promise<void> }).__APOLLO_INIT__ === 'function'
-  ) {
-    await (apolloReady as { __APOLLO_INIT__?: () => Promise<void> }).__APOLLO_INIT__?.();
-  }
   let server: Server | undefined;
   if (process.env.NODE_ENV !== 'test') {
     const port = process.env.PORT || 3000;

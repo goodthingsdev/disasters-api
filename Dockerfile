@@ -1,12 +1,12 @@
 # Use official Node.js LTS image
-FROM node:20-slim
+FROM node:22-slim
 
 # Set working directory
 WORKDIR /usr/src/app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install --force
+RUN npm install
 
 # Install nodemon globally for hot-reloading
 RUN npm install -g nodemon
@@ -17,8 +17,13 @@ RUN npm install --save-dev protobufjs-cli
 # Copy proto files for code generation
 COPY proto/ ./proto/
 
-# Generate protobuf JS and TS files at build time
+# Copy Prisma schema and config for client generation
+COPY prisma/ ./prisma/
+COPY prisma.config.ts ./
+
+# Generate protobuf JS/TS and Prisma client at build time
 RUN npm run proto:all
+RUN npx prisma generate
 
 # Don't copy source code here - it will be mounted as a volume
 # COPY . .
