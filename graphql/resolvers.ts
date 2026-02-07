@@ -52,7 +52,7 @@ const resolvers: IResolvers = {
             filter,
           })
         ).map((doc: Disaster) => new DisasterResponseDTO(doc));
-        const total = await countDisasters();
+        const total = await countDisasters(filter);
         return {
           data,
           page,

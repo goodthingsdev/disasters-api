@@ -20,7 +20,8 @@
     "pretest": "npx tsx create-test-dbs.ts",
     "proto:js": "pbjs -t static-module -w commonjs -o proto/disaster_pb.js proto/disaster.proto",
     "proto:ts": "pbts -o proto/disaster_pb.d.ts proto/disaster_pb.js",
-    "proto:all": "npm run proto:js && npm run proto:ts"
+    "proto:all": "npm run proto:js && npm run proto:ts",
+    "seed": "npx tsx scripts/seed.ts"
   },
   "keywords": [],
   "author": "",

@@ -84,6 +84,23 @@ and configures per-worker test databases automatically:
 docker compose exec api npm test
 ```
 
+### Seeding Sample Data
+
+The repository includes a seed script that populates the database with 17
+realistic disaster records spanning 6 continents, 12 disaster types, multiple
+time frames (Jan 2025 – Feb 2026), and all three statuses (`active`,
+`contained`, `resolved`).
+
+```sh
+docker compose exec api npm run seed              # inside Docker (recommended)
+npm run seed                                      # from the host
+npm run seed -- http://my-host:4000               # custom base URL
+```
+
+> **Note:** The script is additive — running it multiple times creates
+> duplicate records. To start fresh, recreate the database with
+> `docker compose down -v && docker compose up --build -d`.
+
 ### Local Development (without Docker)
 
 If you prefer running Node.js directly on your machine:
