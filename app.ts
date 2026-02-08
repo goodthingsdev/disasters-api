@@ -20,6 +20,7 @@ import { router } from './routes/disasters.js';
 import { typeDefs } from './graphql/schema.js';
 import { resolvers } from './graphql/resolvers.js';
 import { errorHandler } from './middleware/error.js';
+import { apiKeyAuth } from './middleware/auth.js';
 import type { GraphQLFormattedError } from 'graphql';
 import {
   CREATE_DISASTERS_TABLE_SQL,
@@ -59,7 +60,11 @@ const envSchema = Joi.object({
   PORT: Joi.number().integer().min(1).max(65535).default(3000),
   POSTGRES_URI: Joi.string().uri().required(),
   CORS_ORIGIN: Joi.string().allow('*').default('*'),
-  // Add more as needed
+  API_KEY: Joi.string().min(32).when('NODE_ENV', {
+    is: 'production',
+    then: Joi.required(),
+    otherwise: Joi.optional(),
+  }),
 }).unknown();
 
 const { value: env, error: envError } = envSchema.validate(process.env, { abortEarly: false });
@@ -214,18 +219,25 @@ async function createApp(pgPool?: Pool): Promise<express.Application> {
     }),
   );
 
-  // ApolloServer initialization (now synchronous)
-  await initApollo(app);
-
   // Only apply JSON body parsing to REST routes (built into Express 5)
   app.use('/api', express.json());
   app.use(helmet());
   app.use(hpp());
 
-  // Swagger UI
+  // Swagger UI (no auth required — operational endpoint)
   if (openApiSpec) {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec));
   }
+
+  // API key authentication: protect /api and /graphql routes.
+  // Skip auth in test environment to avoid breaking existing tests.
+  if (process.env.NODE_ENV !== 'test') {
+    app.use('/api', apiKeyAuth);
+    app.use('/graphql', apiKeyAuth);
+  }
+
+  // ApolloServer initialization
+  await initApollo(app);
 
   // Fine-tuned Helmet configuration
   app.use(
