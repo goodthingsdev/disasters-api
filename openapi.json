@@ -413,9 +413,9 @@
     },
     "securitySchemes": {
       "ApiKeyAuth": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "X-API-Key"
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API key passed as a Bearer token in the Authorization header"
       }
     }
   },
