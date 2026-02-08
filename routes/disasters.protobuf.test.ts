@@ -51,6 +51,7 @@ describe('Protobuf Content Negotiation', () => {
       date: '2025-01-01',
       status: 'active',
       description: 'Test fire',
+      source: 'official',
     };
     const res = await request(server)
       .post('/api/v1/disasters')

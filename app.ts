@@ -21,7 +21,13 @@ import { typeDefs } from './graphql/schema.js';
 import { resolvers } from './graphql/resolvers.js';
 import { errorHandler } from './middleware/error.js';
 import type { GraphQLFormattedError } from 'graphql';
-import { CREATE_DISASTERS_TABLE_SQL, CREATE_LOCATION_INDEX_SQL } from './disaster.model.js';
+import {
+  CREATE_DISASTERS_TABLE_SQL,
+  CREATE_LOCATION_INDEX_SQL,
+  CREATE_SOURCE_INDEX_SQL,
+  CREATE_SOURCE_EXTERNAL_ID_UNIQUE_INDEX_SQL,
+  ADD_SOURCE_COLUMNS_SQL,
+} from './disaster.model.js';
 
 dotenv.config();
 
@@ -160,10 +166,13 @@ async function createApp(pgPool?: Pool): Promise<express.Application> {
     throw new Error('PostgreSQL connection failed: ' + (err as Error).message);
   }
 
-  // Ensure disasters table and index exist
+  // Ensure disasters table and indexes exist
   try {
     await pool.query(CREATE_DISASTERS_TABLE_SQL);
+    await pool.query(ADD_SOURCE_COLUMNS_SQL);
     await pool.query(CREATE_LOCATION_INDEX_SQL);
+    await pool.query(CREATE_SOURCE_INDEX_SQL);
+    await pool.query(CREATE_SOURCE_EXTERNAL_ID_UNIQUE_INDEX_SQL);
   } catch (err) {
     logger.error('Failed to ensure disasters table/index', { error: err });
     throw new Error('Failed to ensure disasters table/index: ' + (err as Error).message);

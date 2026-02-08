@@ -2,31 +2,41 @@ import { prisma } from './prisma';
 import { Disaster } from '../disaster.model.js';
 import { DisasterInput } from '../dto/disaster.dto.js';
 
+// Common SELECT columns used across queries
+const BASE_SELECT_COLUMNS = `id, type, ST_AsGeoJSON(location)::json as location, date, description, status, source, external_id, source_url, created_at, updated_at`;
+
+// Helper to format date as YYYY-MM-DD
+function formatDisasterDate(d: Disaster): Disaster {
+  return {
+    ...d,
+    date:
+      d.date instanceof Date
+        ? d.date.toISOString().slice(0, 10)
+        : typeof d.date === 'string'
+          ? d.date.slice(0, 10)
+          : d.date,
+  };
+}
+
 /**
  * Create a new disaster record
  */
 export const createDisaster = async (data: DisasterInput): Promise<Disaster> => {
-  const { type, location, date, description, status } = data;
-  // Prisma does not natively support PostGIS geography(Point,4326), so use raw SQL
+  const { type, location, date, description, status, source, external_id, source_url } = data;
   const result = (await prisma.$queryRawUnsafe(
-    `INSERT INTO disasters (type, location, date, description, status)
-     VALUES ($1, ST_GeomFromGeoJSON($2)::geography, $3::timestamp, $4, $5)
-     RETURNING id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at`,
+    `INSERT INTO disasters (type, location, date, description, status, source, external_id, source_url)
+     VALUES ($1, ST_GeomFromGeoJSON($2)::geography, $3::timestamp, $4, $5, $6, $7, $8)
+     RETURNING ${BASE_SELECT_COLUMNS}`,
     type,
     JSON.stringify(location),
     date,
     description,
     status || 'active',
+    source || 'official',
+    external_id || null,
+    source_url || null,
   )) as Disaster[];
-  return {
-    ...result[0],
-    date:
-      result[0].date instanceof Date
-        ? result[0].date.toISOString().slice(0, 10)
-        : typeof result[0].date === 'string'
-          ? result[0].date.slice(0, 10)
-          : result[0].date,
-  };
+  return formatDisasterDate(result[0]);
 };
 
 export type DisasterFilter = Partial<Disaster> & {
@@ -55,6 +65,10 @@ export const getAllDisasters = async (
     conditions.push(`status = $${paramIndex++}`);
     values.push(filterConst.status);
   }
+  if (filterConst.source) {
+    conditions.push(`source = $${paramIndex++}`);
+    values.push(filterConst.source);
+  }
   if (filterConst.dateFrom) {
     conditions.push(`date >= $${paramIndex++}::timestamp`);
     values.push(filterConst.dateFrom);
@@ -69,23 +83,14 @@ export const getAllDisasters = async (
   }
   values.push(sanitizedSkip, sanitizedLimit);
   const result = (await prisma.$queryRawUnsafe(
-    `SELECT id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at
+    `SELECT ${BASE_SELECT_COLUMNS}
      FROM disasters
      ${whereClause}
      ORDER BY created_at DESC
      OFFSET $${paramIndex++} LIMIT $${paramIndex++}`,
     ...values,
   )) as Disaster[];
-  // Format date as YYYY-MM-DD in each result
-  return result.map((d) => ({
-    ...d,
-    date:
-      d.date instanceof Date
-        ? d.date.toISOString().slice(0, 10)
-        : typeof d.date === 'string'
-          ? d.date.slice(0, 10)
-          : d.date,
-  }));
+  return result.map(formatDisasterDate);
 };
 
 export const countDisasters = async (filter: DisasterFilter = {}): Promise<number> => {
@@ -99,6 +104,10 @@ export const countDisasters = async (filter: DisasterFilter = {}): Promise<numbe
   if (filter.status) {
     conditions.push(`status = $${paramIndex++}`);
     values.push(filter.status);
+  }
+  if (filter.source) {
+    conditions.push(`source = $${paramIndex++}`);
+    values.push(filter.source);
   }
   if (filter.dateFrom) {
     conditions.push(`date >= $${paramIndex++}::timestamp`);
@@ -118,21 +127,12 @@ export const countDisasters = async (filter: DisasterFilter = {}): Promise<numbe
 
 export const getDisasterById = async (id: string): Promise<Disaster | null> => {
   const result = (await prisma.$queryRawUnsafe(
-    `SELECT id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at
+    `SELECT ${BASE_SELECT_COLUMNS}
      FROM disasters WHERE id = $1::uuid`,
     id,
   )) as Disaster[];
   if (!result[0]) return null;
-  // Format date as YYYY-MM-DD
-  return {
-    ...result[0],
-    date:
-      result[0].date instanceof Date
-        ? result[0].date.toISOString().slice(0, 10)
-        : typeof result[0].date === 'string'
-          ? result[0].date.slice(0, 10)
-          : result[0].date,
-  };
+  return formatDisasterDate(result[0]);
 };
 
 export const updateDisaster = async (
@@ -164,19 +164,11 @@ export const updateDisaster = async (
     `UPDATE disasters
      SET ${fields.join(', ')}
      WHERE id = $1::uuid
-     RETURNING id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at`,
+     RETURNING ${BASE_SELECT_COLUMNS}`,
     ...values,
   )) as Disaster[];
   if (!result[0]) return null;
-  return {
-    ...result[0],
-    date:
-      result[0].date instanceof Date
-        ? result[0].date.toISOString().slice(0, 10)
-        : typeof result[0].date === 'string'
-          ? result[0].date.slice(0, 10)
-          : result[0].date,
-  };
+  return formatDisasterDate(result[0]);
 };
 
 export const deleteDisaster = async (id: string): Promise<boolean> => {
@@ -191,7 +183,7 @@ export const bulkInsertDisasters = async (disasters: DisasterInput[]): Promise<D
   let paramIndex = 1;
   for (const disaster of disasters) {
     placeholders.push(
-      `($${paramIndex++}, ST_GeomFromGeoJSON($${paramIndex++})::geography, $${paramIndex++}::timestamp, $${paramIndex++}, $${paramIndex++})`,
+      `($${paramIndex++}, ST_GeomFromGeoJSON($${paramIndex++})::geography, $${paramIndex++}::timestamp, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`,
     );
     values.push(
       disaster.type,
@@ -199,23 +191,18 @@ export const bulkInsertDisasters = async (disasters: DisasterInput[]): Promise<D
       disaster.date,
       disaster.description,
       disaster.status || 'active',
+      disaster.source || 'official',
+      disaster.external_id || null,
+      disaster.source_url || null,
     );
   }
   const result = (await prisma.$queryRawUnsafe(
-    `INSERT INTO disasters (type, location, date, description, status)
+    `INSERT INTO disasters (type, location, date, description, status, source, external_id, source_url)
      VALUES ${placeholders.join(', ')}
-     RETURNING id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at`,
+     RETURNING ${BASE_SELECT_COLUMNS}`,
     ...values,
   )) as Disaster[];
-  return result.map((d) => ({
-    ...d,
-    date:
-      d.date instanceof Date
-        ? d.date.toISOString().slice(0, 10)
-        : typeof d.date === 'string'
-          ? d.date.slice(0, 10)
-          : d.date,
-  }));
+  return result.map(formatDisasterDate);
 };
 
 export const bulkUpdateDisasters = async (
@@ -233,21 +220,40 @@ export const bulkUpdateDisasters = async (
   return { matchedCount, modifiedCount };
 };
 
-export async function findDisastersNear(arg1: {
+export async function findDisastersNear(params: {
   lat: number;
   lng: number;
   distance: number;
+  status?: string;
+  source?: string;
 }): Promise<Disaster[]> {
-  const { lat, lng, distance } = arg1;
+  const { lat, lng, distance, status, source } = params;
+
+  // Build optional WHERE conditions beyond the spatial filter
+  const conditions: string[] = [
+    `ST_DWithin(location, ST_GeomFromText('POINT(' || $1 || ' ' || $2 || ')')::geography, $3 * 1000)`,
+  ];
+  const values: unknown[] = [lng, lat, distance];
+  let paramIndex = 4;
+
+  if (status) {
+    conditions.push(`status = $${paramIndex++}`);
+    values.push(status);
+  }
+  if (source) {
+    conditions.push(`source = $${paramIndex++}`);
+    values.push(source);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
   const result = (await prisma.$queryRawUnsafe(
-    `SELECT id, type, ST_AsGeoJSON(location)::json as location, date, description, status, created_at, updated_at,
+    `SELECT ${BASE_SELECT_COLUMNS},
             ST_Distance(location, ST_GeomFromText('POINT(' || $1 || ' ' || $2 || ')')::geography) / 1000 as distance_km
      FROM disasters
-     WHERE ST_DWithin(location, ST_GeomFromText('POINT(' || $1 || ' ' || $2 || ')')::geography, $3 * 1000)
+     ${whereClause}
      ORDER BY distance_km`,
-    lng,
-    lat,
-    distance,
+    ...values,
   )) as Disaster[];
   return result;
 }
