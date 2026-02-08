@@ -31,16 +31,18 @@ const resolvers: IResolvers = {
         limit?: number;
         type?: string;
         status?: string;
+        source?: string;
         dateFrom?: string;
         dateTo?: string;
       },
     ) => {
       try {
-        const { page = 1, limit = 20, type, dateFrom, dateTo, status } = args;
-        // Create filter object for PostgreSQL service - simplified for now
+        const { page = 1, limit = 20, type, dateFrom, dateTo, status, source } = args;
+        // Create filter object for PostgreSQL service
         const filter: Record<string, unknown> = {};
         if (type) filter.type = type;
         if (status) filter.status = status;
+        if (source) filter.source = source;
         if (dateFrom) filter.dateFrom = dateFrom;
         if (dateTo) filter.dateTo = dateTo;
 
@@ -82,15 +84,21 @@ const resolvers: IResolvers = {
     },
     disastersNear: async (
       _: unknown,
-      { lat, lng, distance }: { lat: number; lng: number; distance: number },
+      {
+        lat,
+        lng,
+        distance,
+        status,
+        source,
+      }: { lat: number; lng: number; distance: number; status?: string; source?: string },
     ) => {
       try {
-        const { error } = nearQuerySchema.validate({ lat, lng, distance });
+        const { error } = nearQuerySchema.validate({ lat, lng, distance, status, source });
         if (error)
           throw new GraphQLError(mapJoiErrorMessage(error.message), {
             extensions: { code: 'BAD_USER_INPUT' },
           });
-        return (await findDisastersNear({ lat, lng, distance })).map(
+        return (await findDisastersNear({ lat, lng, distance, status, source })).map(
           (doc: Disaster) => new DisasterResponseDTO(doc),
         );
       } catch (err) {

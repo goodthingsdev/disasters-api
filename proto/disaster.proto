@@ -11,6 +11,10 @@ message Disaster {
   string status = 6;
   string created_at = 7;
   string updated_at = 8;
+  string source = 9;
+  string external_id = 10;
+  string source_url = 11;
+  double distance_km = 12;
 }
 
 message DisasterList {

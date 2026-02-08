@@ -55,6 +55,13 @@
               "enum": ["active", "contained", "resolved"]
             },
             "description": "Filter disasters by status (active, contained, resolved)"
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter by data source (e.g., official, fogos_pt, prociv, user, nasa_firms)"
           }
         ],
         "responses": {
@@ -111,24 +118,44 @@
             "name": "lat",
             "in": "query",
             "required": true,
-            "schema": { "type": "number", "minimum": -90, "maximum": 90 }
+            "schema": { "type": "number", "minimum": -90, "maximum": 90 },
+            "description": "Latitude of the center point"
           },
           {
             "name": "lng",
             "in": "query",
             "required": true,
-            "schema": { "type": "number", "minimum": -180, "maximum": 180 }
+            "schema": { "type": "number", "minimum": -180, "maximum": 180 },
+            "description": "Longitude of the center point"
           },
           {
             "name": "distance",
             "in": "query",
             "required": true,
-            "schema": { "type": "number", "minimum": 0 }
+            "schema": { "type": "number", "minimum": 0 },
+            "description": "Search radius in kilometers"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["active", "contained", "resolved"]
+            },
+            "description": "Filter by disaster status"
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter by data source (e.g., official, fogos_pt, prociv, user)"
           }
         ],
         "responses": {
           "200": {
-            "description": "List of disasters within distance",
+            "description": "List of disasters within distance, ordered by proximity. Each result includes distance_km.",
             "content": {
               "application/json": {
                 "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Disaster" } }
@@ -275,7 +302,7 @@
       "Disaster": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string" },
+          "id": { "type": "string", "format": "uuid" },
           "type": { "type": "string" },
           "location": {
             "type": "object",
@@ -302,9 +329,29 @@
             "type": "string",
             "description": "Status of the disaster",
             "enum": ["active", "contained", "resolved"]
+          },
+          "source": {
+            "type": "string",
+            "description": "Data origin identifier (e.g., official, fogos_pt, prociv, user, nasa_firms)",
+            "default": "official"
+          },
+          "externalId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Original ID from the government feed or external source"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL linking back to the official source"
+          },
+          "distanceKm": {
+            "type": "number",
+            "readOnly": true,
+            "description": "Distance from the query point in kilometers (only present in /near responses)"
           }
         },
-        "required": ["_id", "type", "location", "date", "status"]
+        "required": ["id", "type", "location", "date", "status", "source"]
       },
       "DisasterInput": {
         "type": "object",
@@ -335,6 +382,21 @@
             "type": "string",
             "description": "Status of the disaster",
             "enum": ["active", "contained", "resolved"]
+          },
+          "source": {
+            "type": "string",
+            "description": "Data origin identifier (defaults to 'official')",
+            "default": "official"
+          },
+          "external_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Original ID from the external source"
+          },
+          "source_url": {
+            "type": "string",
+            "nullable": true,
+            "description": "URL linking back to the official source"
           }
         },
         "required": ["type", "location", "date", "status"]

@@ -16,6 +16,9 @@ model Disaster {
   date        DateTime
   description String?
   status      String   @default("active")
+  source      String   @default("official")
+  externalId  String?  @map("external_id")
+  sourceUrl   String?  @map("source_url")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

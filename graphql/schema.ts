@@ -20,6 +20,10 @@ const typeDefs: DocumentNode = gql`
     date: String!
     description: String
     status: DisasterStatus!
+    source: String
+    externalId: String
+    sourceUrl: String
+    distanceKm: Float
   }
 
   input LocationInput {
@@ -33,6 +37,9 @@ const typeDefs: DocumentNode = gql`
     date: String!
     description: String
     status: DisasterStatus!
+    source: String
+    externalId: String
+    sourceUrl: String
   }
 
   input DisasterUpdateInput {
@@ -42,6 +49,9 @@ const typeDefs: DocumentNode = gql`
     date: String
     description: String
     status: DisasterStatus
+    source: String
+    externalId: String
+    sourceUrl: String
   }
 
   type DisasterPage {
@@ -60,9 +70,16 @@ const typeDefs: DocumentNode = gql`
       dateFrom: String
       dateTo: String
       status: DisasterStatus
+      source: String
     ): DisasterPage!
     disaster(id: ID!): Disaster
-    disastersNear(lat: Float!, lng: Float!, distance: Float!): [Disaster!]!
+    disastersNear(
+      lat: Float!
+      lng: Float!
+      distance: Float!
+      status: DisasterStatus
+      source: String
+    ): [Disaster!]!
   }
 
   type Mutation {

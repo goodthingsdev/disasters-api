@@ -64,6 +64,10 @@ function toProtoDisaster(disaster: Disaster) {
     date: disaster.date instanceof Date ? disaster.date.toISOString() : disaster.date,
     description: disaster.description,
     status: disaster.status,
+    source: disaster.source || 'official',
+    external_id: disaster.externalId || '',
+    source_url: disaster.sourceUrl || '',
+    distance_km: disaster.distanceKm ?? 0,
     createdAt:
       disaster.createdAt instanceof Date ? disaster.createdAt.toISOString() : disaster.createdAt,
     updatedAt:
@@ -100,12 +104,14 @@ router.get(
       dateFrom,
       dateTo,
       status,
+      source,
     } = req.query as Record<string, string>;
     const pageNum = Number(page) || 1;
     const limitNum = Math.min(Number(limit) || 20, 100);
     const filter: Record<string, unknown> = {};
     if (type) filter.type = type;
     if (status) filter.status = status;
+    if (source) filter.source = source;
     if (dateFrom) filter.dateFrom = dateFrom;
     if (dateTo) filter.dateTo = dateTo;
     const disasters = await getAllDisasters({
@@ -140,8 +146,8 @@ router.get(
         status: 400,
       });
     }
-    const { lat, lng, distance } = value;
-    const disasters = await findDisastersNear({ lng, lat, distance });
+    const { lat, lng, distance, status, source } = value;
+    const disasters = await findDisastersNear({ lng, lat, distance, status, source });
     if (wantsProtobuf(req)) {
       const pbDisasters = disasters.map(toProtoDisaster);
       const message = disastersPb.disasters.DisasterList.create({ disasters: pbDisasters });

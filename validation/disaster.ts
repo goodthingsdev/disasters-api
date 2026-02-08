@@ -18,13 +18,18 @@ const disasterSchema = Joi.object({
   date: Joi.string().isoDate().required(),
   description: Joi.string().allow('').optional(),
   status: Joi.string().valid('active', 'contained', 'resolved').default('active').required(),
+  source: Joi.string().max(255).default('official').optional(),
+  external_id: Joi.string().max(255).allow(null).optional(),
+  source_url: Joi.string().uri().allow(null, '').optional(),
 });
 
 const nearQuerySchema = Joi.object({
   lat: Joi.number().min(-90).max(90).required(),
   lng: Joi.number().min(-180).max(180).required(),
   distance: Joi.number().min(0).required(),
-});
+  status: Joi.string().valid('active', 'contained', 'resolved').optional(),
+  source: Joi.string().max(255).optional(),
+}).options({ stripUnknown: true });
 
 const bulkInsertSchema = Joi.array().items(disasterSchema).min(1).required();
 
@@ -42,6 +47,9 @@ const bulkUpdateSchema = Joi.array()
       date: Joi.string().isoDate(),
       description: Joi.string().allow(''),
       status: Joi.string().valid('active', 'contained', 'resolved'),
+      source: Joi.string().max(255),
+      external_id: Joi.string().max(255).allow(null),
+      source_url: Joi.string().uri().allow(null, ''),
     }).min(2), // must have id and at least one field to update
   )
   .min(1)
