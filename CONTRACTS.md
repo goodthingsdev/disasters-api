@@ -22,6 +22,35 @@ Rate limit: **100 requests / 15 minutes** per IP.
 
 ---
 
+## Data Boundary: Official vs. User Reports
+
+> **Decision (2026-02-14):** Path C — User reports do NOT sync to the API.
+> See [disasters-mobile#1](https://github.com/goodthingsdev/disasters-mobile/issues/1) for full analysis.
+
+| Data Source | Where It Lives | Owner |
+|-------------|---------------|-------|
+| Official government feeds (Fogos.pt, PROCIV, NASA FIRMS) | **Disasters API** (`disasters` table) | API |
+| User-submitted reports (photos, votes, moderation, verification) | **Supabase** (`user_reports` table) | Mobile / Supabase |
+
+### Why
+
+- The API's purpose is aggregating **official government data**. User reports have fundamentally different fields (title, phase, photos, voting, moderation, verification) that don't map to the `disasters` schema.
+- Syncing creates hard problems: moderation cascading, visibility leaks (flagged report hidden in Supabase but visible in API), deduplication fragility, semantic type mismatches (volunteer calls aren't disasters).
+- The mobile app already reads from **both** sources and merges into a `UnifiedDisasterEvent` client-side — no sync needed.
+
+### What this means for the mobile app
+
+1. **Official disasters** — fetch from `GET /api/v1/disasters` (or GraphQL)
+2. **User reports** — fetch directly from Supabase `user_reports` table via Supabase client
+3. **Merge client-side** — combine into `UnifiedDisasterEvent`, deduplicate by checking `linked_disaster_id`
+4. **No Edge Function sync** — no Supabase-to-API replication of user reports
+
+### Future option
+
+If non-mobile API consumers need user report data, consider a **separate endpoint** (`/api/v2/reports`) or a dedicated table rather than expanding the `disasters` schema. This keeps the official data clean.
+
+---
+
 ## Core Data Model: Disaster
 
 ### Response Shape (JSON)
@@ -37,7 +66,7 @@ interface Disaster {
   date: string;                  // ISO 8601 datetime
   description: string | null;
   status: "active" | "contained" | "resolved";
-  source: string;                // "official" | "fogos_pt" | "prociv" | "nasa_firms" | "user"
+  source: string;                // "official" | "fogos_pt" | "prociv" | "nasa_firms"
   externalId: string | null;     // ID from the original data source
   sourceUrl: string | null;      // Link to original source
   createdAt: string;             // ISO 8601
